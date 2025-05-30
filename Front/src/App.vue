@@ -40,6 +40,8 @@
       <div ref="nodeB" class="node" draggable>移载机</div>
       <div ref="nodeC" class="node" draggable>提升机</div>
       <div ref="nodeD" class="node" draggable>货架</div>
+      <button @click="handleExport">导出流程</button>
+      <input type="file" id="importFile" accept=".json" @change="handleImport" />
     </div>
 
   <WelcomeDialog v-model="dialogVisible" />
@@ -54,10 +56,10 @@ import { VueFlow, addEdge, useVueFlow, MarkerType} from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
 import '@vue-flow/minimap/dist/style.css'
 import { validateConnection } from './utils/connectionRules' // 连接规则函数
+import { exportFlow, importFlow } from './utils/importExport'
 import ErrorOverlay from './components/ErrorOverlay.vue' // 错误覆盖组件
 import WelcomeDialog from './components/Dialog.vue'
 const dialogVisible = ref(true)
-
 
 // 导入节点类型
 import NodeA from './components/NodeA.vue'
@@ -91,9 +93,11 @@ const errorKey = ref(0)
 // 从 VueFlow 提供的 hook 中获取工具函数
 const { project, addNodes } = useVueFlow()
 const paneEl = ref(null) // pane DOM 元素
+const vueFlowInstance = ref(null)
 
 // 画布准备好后触发，用于绑定拖放事件
-const onPaneReady = () => {
+const onPaneReady = (instance) => {
+  vueFlowInstance.value = instance
   // 通过 DOM 查询直接获取 pane 元素
   const pane = document.querySelector('.vue-flow__pane')
   if (!pane) {
@@ -145,9 +149,9 @@ const handleDrop = (e) => {
       handles: {
         inputs: [{ position: 'left', id: 'input-b' }],
         outputs: [
-          { position: 'left', id: 'output-b1' },
-          { position: 'right', id: 'output-b2' },
-          { position: 'bottom', id: 'output-b3' }
+          { position: 'top', id: 'output-b1' },
+          { position: 'bottom', id: 'output-b2' },
+          { position: 'right', id: 'output-b3' }
         ]
       }
     },
@@ -155,7 +159,7 @@ const handleDrop = (e) => {
       type: 'node-C',
       data: { label: '模块 C' },
       handles: {
-        inputs: [{ position: 'top', id: 'input-c' }],
+        inputs: [{ position: 'left', id: 'input-c' }],
         outputs: []
       }
     },
@@ -163,7 +167,7 @@ const handleDrop = (e) => {
       type: 'node-D',
       data: { label: '模块 D' },
       handles: {
-        inputs: [{ position: 'top', id: 'input-d' }],
+        inputs: [{ position: 'left', id: 'input-d' }],
         outputs: [{ position: 'right', id: 'output-d'}],
       }
     }
@@ -257,6 +261,21 @@ onMounted(async () => {
     nodeD.value.addEventListener('dragend', onDragEnd)
   }
 })
+
+// 导出和导入处理
+const handleExport = () => {
+  exportFlow(vueFlowInstance.value, (message) => {
+    errorMessage.value = message
+    errorKey.value += 1
+  })
+}
+
+const handleImport = (event) => {
+  importFlow(vueFlowInstance.value, event, (message) => {
+    errorMessage.value = message
+    errorKey.value += 1
+  })
+}
 
 </script>
 
