@@ -79,16 +79,12 @@ const props = defineProps(['id', 'data', 'selected', 'resize', 'rotate', 'setRef
 }
 
 .custom-handle {
-  width: 12px;
-  height: 12px;
+  width: 24px;
+  height: 24px;
   background: white;
   border: 2px solid #2196F3;
   border-radius: 50%;
   box-sizing: border-box;
-  position: absolute;
-  left: -8px;
-  top: 50%;
-  transform: translateY(-50%);
 }
 
 .custom-handle:hover {

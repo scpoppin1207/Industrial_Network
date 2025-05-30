@@ -1,7 +1,7 @@
 <script setup>
-import { Handle, Position } from '@vue-flow/core'
+import { Handle } from '@vue-flow/core'
 import { ResizeRotateNode } from '@vue-flow/resize-rotate-node'
-import transplant from '@/assets/transplant.png'
+import lifter from '@/assets/shelf.png'
 
 const props = defineProps(['id', 'data', 'selected', 'resize', 'rotate', 'setRef'])
 </script>
@@ -16,37 +16,16 @@ const props = defineProps(['id', 'data', 'selected', 'resize', 'rotate', 'setRef
     :setRef="props.setRef"
   >
     <div class="node-wrapper">
-      <div class="custom-node b">
-        <div class="node-title">{{ "移栽机" }}</div>
+      <div class="custom-node d">
+        <div class="node-title">{{ "货架" }}</div>
         <div class="image-container">
-          <img :src="transplant" alt="模块图示" class="node-image" />
+          <img :src="lifter" alt="模块图示" class="node-image" />
         </div>
         <!-- 输入连接点 -->
         <Handle
-          type="target"
-          position="left"
-          id="input-b"
-          class="custom-handle"
-        />
-        <!-- 输出连接点1 -->
-        <Handle
-          type="source"
-          position="top"
-          id="output-b1"
-          class="custom-handle"
-        />
-        <!-- 输出连接点2 -->
-        <Handle
-          type="source"
-          position="bottom"
-          id="output-b2"
-          class="custom-handle"
-        />
-         <!-- 输出连接点2 -->
-        <Handle
           type="source"
           position="right"
-          id="output-b3"
+          id="output-d"
           class="custom-handle"
         />
       </div>
@@ -63,14 +42,14 @@ const props = defineProps(['id', 'data', 'selected', 'resize', 'rotate', 'setRef
   flex: 1 1 auto;
 }
 
-.custom-node.b {
+.custom-node.d {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100%;
   box-sizing: border-box;
   background: white;
-  border: 2px solid #FF9800;
+  border: 2px solid #ff00d9;
   border-radius: 8px;
   overflow: hidden;
   position: relative;

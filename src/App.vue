@@ -25,20 +25,25 @@
             <NodeC v-bind="props" />
         </template>
 
+        <template #node-D="props">
+            <NodeD v-bind="props" />
+        </template>
+
       </VueFlow>
     </div>
 
     <!-- 右侧模块库 -->
     <div class="sidebar">
       <div class="sidebar-title">模块库</div>
-      <div ref="nodeA" class="node" draggable>模块 A</div>
-      <div ref="nodeB" class="node" draggable>模块 B</div>
-      <div ref="nodeC" class="node" draggable>模块 C</div>
+      <div ref="nodeA" class="node" draggable>输送机</div>
+      <div ref="nodeB" class="node" draggable>移载机</div>
+      <div ref="nodeC" class="node" draggable>提升机</div>
+      <div ref="nodeD" class="node" draggable>货架</div>
     </div>
-  </div>
 
+  <WelcomeDialog v-model="dialogVisible" />
   <ErrorOverlay :message="errorMessage" :errkey="errorKey" />
-  <!-- 添加旋转按钮 -->
+  </div>
  
 </template>
 
@@ -47,19 +52,22 @@ import { ref, onMounted , nextTick, markRaw} from 'vue'
 import { VueFlow, addEdge, useVueFlow, MarkerType} from '@vue-flow/core'
 import { validateConnection } from './utils/connectionRules' // 连接规则函数
 import ErrorOverlay from './components/ErrorOverlay.vue' // 错误覆盖组件
-import { ResizeRotateNode } from '@vue-flow/resize-rotate-node'
+import WelcomeDialog from './components/Dialog.vue'
+const dialogVisible = ref(true)
 
 
 // 导入节点类型
 import NodeA from './components/NodeA.vue'
 import NodeB from './components/NodeB.vue'
 import NodeC from './components/NodeC.vue'
+import NodeD from './components/NodeD.vue'
 
 // 注册节点类型， Vue Flow 会识别‘node-A’类型并在画布上渲染NodeA组件
 const nodeTypes = {
   'node-A': markRaw(NodeA), // 使用 markRaw 确保组件不会被 Vue 的响应式系统处理
   'node-B': markRaw(NodeB),
-  'node-C': markRaw(NodeC)
+  'node-C': markRaw(NodeC),
+  'node-D': markRaw(NodeD), 
 }
 
 // 定义画布上的节点和边
@@ -71,6 +79,7 @@ const edges = ref([]) // 画布上的边数组
 const nodeA = ref(null)
 const nodeB = ref(null)
 const nodeC = ref(null)
+const nodeD = ref(null) 
 
 // 错误处理相关
 const errorMessage = ref('')
@@ -148,11 +157,19 @@ const handleDrop = (e) => {
         inputs: [{ position: 'top', id: 'input-c' }],
         outputs: []
       }
+    },
+    D: {
+      type: 'node-D',
+      data: { label: '模块 D' },
+      handles: {
+        inputs: [],
+        outputs: [{ position: 'right', id: 'output-d'}],
+      }
     }
   }
   
   const config = nodeConfigs[type]
-  console.log('创建节点时的 config.data:', config.data) // ← 这里加
+  console.log('创建节点时的 config.data:', config.data) 
   // 添加节点
   addNodes({
     id: `${type}-${Date.now()}`,
@@ -164,7 +181,7 @@ const handleDrop = (e) => {
     outputs: config.handles.outputs.map(h => h.id),
     style: {
         background: '#fff',
-        padding: '3px',
+        padding: '5px',
         borderRadius: '20px',
     },
     },
@@ -234,6 +251,10 @@ onMounted(async () => {
     nodeC.value.addEventListener('dragstart', (e) => onDragStart(e, 'C'))
     nodeC.value.addEventListener('dragend', onDragEnd)
   }
+  if (nodeD.value) {
+    nodeD.value.addEventListener('dragstart', (e) => onDragStart(e, 'D'))
+    nodeD.value.addEventListener('dragend', onDragEnd)
+  }
 })
 
 </script>
@@ -287,6 +308,7 @@ html, body, #app {
 .node {
   -webkit-user-drag: element; /* macOS Safari 支持 */
 }
+
 
 
 </style>
