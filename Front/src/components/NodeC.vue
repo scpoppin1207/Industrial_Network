@@ -18,6 +18,7 @@ const props = defineProps(['id', 'data', 'selected', 'resize', 'rotate', 'setRef
     <div class="node-wrapper">
       <div class="custom-node c">
         <div class="node-title">{{ "提升机" }}</div>
+        <div class="floor-display">楼层: {{ props.data.floor }}</div>
         <div class="image-container">
           <img :src="lifter" alt="模块图示" class="node-image" />
         </div>
@@ -27,6 +28,13 @@ const props = defineProps(['id', 'data', 'selected', 'resize', 'rotate', 'setRef
           position="left"
           id="input-c"
           class="custom-handle input-handle"
+        />
+
+        <Handle
+          type="source"
+          position="right"
+          id="output-c"
+          class="custom-handle output-handle"
         />
       </div>
     </div>
@@ -101,5 +109,12 @@ const props = defineProps(['id', 'data', 'selected', 'resize', 'rotate', 'setRef
 .custom-handle:hover {
   background: #b8ababd3;
   cursor: crosshair;
+}
+
+.floor-display {
+  text-align: center;
+  font-size: 14px;
+  margin: 8px 0;
+  color: #555;
 }
 </style>
