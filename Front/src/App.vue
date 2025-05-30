@@ -11,6 +11,7 @@
         fit-view-on-init
         :nodes-draggable="true"
       >
+       <MiniMap pannable zoomable />
       <!-- Vue flow的node-types属性绑定在nodeTypes变量上 Vue flow的pane-ready事件绑定在onPaneReady函数上，事件发生会触发onPaneReady函数 -->
 
        <template #node-A="props">
@@ -50,6 +51,8 @@
 <script setup>
 import { ref, onMounted , nextTick, markRaw} from 'vue'
 import { VueFlow, addEdge, useVueFlow, MarkerType} from '@vue-flow/core'
+import { MiniMap } from '@vue-flow/minimap'
+import '@vue-flow/minimap/dist/style.css'
 import { validateConnection } from './utils/connectionRules' // 连接规则函数
 import ErrorOverlay from './components/ErrorOverlay.vue' // 错误覆盖组件
 import WelcomeDialog from './components/Dialog.vue'
@@ -88,8 +91,6 @@ const errorKey = ref(0)
 // 从 VueFlow 提供的 hook 中获取工具函数
 const { project, addNodes } = useVueFlow()
 const paneEl = ref(null) // pane DOM 元素
-
-
 
 // 画布准备好后触发，用于绑定拖放事件
 const onPaneReady = () => {
@@ -162,7 +163,7 @@ const handleDrop = (e) => {
       type: 'node-D',
       data: { label: '模块 D' },
       handles: {
-        inputs: [],
+        inputs: [{ position: 'top', id: 'input-d' }],
         outputs: [{ position: 'right', id: 'output-d'}],
       }
     }
@@ -275,6 +276,9 @@ html, body, #app {
   flex: 1;
   position: relative;
   background-color: #f0f0f0;
+  background-image: linear-gradient(to right, #ccc 1px, transparent 1px),
+                    linear-gradient(to bottom, #ccc 1px, transparent 1px);
+  background-size: 20px 20px; /* 每个网格20px */
 }
 
 .sidebar {

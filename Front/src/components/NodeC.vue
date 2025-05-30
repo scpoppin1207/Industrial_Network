@@ -26,7 +26,7 @@ const props = defineProps(['id', 'data', 'selected', 'resize', 'rotate', 'setRef
           type="target"
           position="left"
           id="input-c"
-          class="custom-handle"
+          class="custom-handle input-handle"
         />
       </div>
     </div>
@@ -78,17 +78,28 @@ const props = defineProps(['id', 'data', 'selected', 'resize', 'rotate', 'setRef
   object-fit: cover;
 }
 
-.custom-handle {
+
+.input-handle {
   width: 24px;
   height: 24px;
   background: white;
-  border: 2px solid #2196F3;
+  border: 2px solid #008cff;
   border-radius: 50%;
   box-sizing: border-box;
 }
 
+.output-handle {
+  width: 24px;
+  height: 24px;
+  background: white;
+  border: 2px solid #ff0000;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+
 .custom-handle:hover {
-  background: #2196F3;
+  background: #b8ababd3;
   cursor: crosshair;
 }
 </style>

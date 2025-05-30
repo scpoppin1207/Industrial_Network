@@ -26,28 +26,28 @@ const props = defineProps(['id', 'data', 'selected', 'resize', 'rotate', 'setRef
           type="target"
           position="left"
           id="input-b"
-          class="custom-handle"
+          class="custom-handle input-handle"
         />
         <!-- 输出连接点1 -->
         <Handle
           type="source"
           position="top"
           id="output-b1"
-          class="custom-handle"
+          class="custom-handle output-handle"
         />
         <!-- 输出连接点2 -->
         <Handle
           type="source"
           position="bottom"
           id="output-b2"
-          class="custom-handle"
+          class="custom-handle output-handle"
         />
          <!-- 输出连接点2 -->
         <Handle
           type="source"
           position="right"
           id="output-b3"
-          class="custom-handle"
+          class="custom-handle output-handle"
         />
       </div>
     </div>
@@ -93,23 +93,28 @@ const props = defineProps(['id', 'data', 'selected', 'resize', 'rotate', 'setRef
   overflow: hidden;
 }
 
-.node-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
 
-.custom-handle {
+.input-handle {
   width: 24px;
   height: 24px;
   background: white;
-  border: 2px solid #2196F3;
+  border: 2px solid #008cff;
   border-radius: 50%;
   box-sizing: border-box;
 }
 
+.output-handle {
+  width: 24px;
+  height: 24px;
+  background: white;
+  border: 2px solid #ff0000;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+
 .custom-handle:hover {
-  background: #2196F3;
+  background: #b8ababd3;
   cursor: crosshair;
 }
 </style>
