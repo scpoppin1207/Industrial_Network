@@ -40,7 +40,10 @@
       <div ref="nodeB" class="node" draggable>移载机</div>
       <div ref="nodeC" class="node" draggable>提升机</div>
       <div ref="nodeD" class="node" draggable>货架</div>
-      <button @click="handleExport">导出流程</button>
+      <!-- <button @click="handleExport">导出流程</button> -->
+      <!-- 可选导出形式 -->
+      <button @click="handleExport('json')">导出 JSON</button>
+      <button @click="handleExport('sys')">导出 SYS</button>
       <input type="file" id="importFile" accept=".json" @change="handleImport" />
     </div>
 
@@ -263,11 +266,19 @@ onMounted(async () => {
 })
 
 // 导出和导入处理
-const handleExport = () => {
+// const handleExport = () => {
+//   exportFlow(vueFlowInstance.value, (message) => {
+//     errorMessage.value = message
+//     errorKey.value += 1
+//   })
+// }
+
+// 新的导出函数
+const handleExport = (format = 'json') => {
   exportFlow(vueFlowInstance.value, (message) => {
     errorMessage.value = message
     errorKey.value += 1
-  })
+  }, format === 'sys')
 }
 
 const handleImport = (event) => {

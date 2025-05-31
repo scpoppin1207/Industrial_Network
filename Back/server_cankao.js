@@ -90,8 +90,6 @@ app.post('/api/dialog', async (req, res) => {
         // 解析js_gen.py的输出
         const flowJson = JSON.parse(jsonOutput)
         console.log('✅ JSON数据生成成功')
-        // debug
-        // console.log(flowJson)
         
         // 4. 返回结果给前端
         res.json({ 
@@ -112,3 +110,51 @@ app.post('/api/dialog', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ 后端服务器运行中：http://localhost:${PORT}`)
 })
+
+
+// 添加新的路由处理 SYS 转换
+app.post('/api/convert-to-sys', async (req, res) => {
+  const flowData = req.body;
+  
+  try {
+    // 调用 Python 转换脚本
+    const xmlOutput = await runPythonConversion(flowData);
+    
+    // 设置正确的响应头
+    res.setHeader('Content-Type', 'application/xml');
+    res.setHeader('Content-Disposition', 'attachment; filename="workflow.sys"');
+    
+    // 发送 XML 数据
+    res.send(xmlOutput);
+  } catch (error) {
+    console.error('SYS 转换失败:', error);
+    res.status(500).send('SYS 转换失败');
+  }
+});
+
+// 封装 Python 转换函数
+function runPythonConversion(flowData) {
+  return new Promise((resolve, reject) => {
+    const pythonProcess = spawn('python', ['json2sys.py', JSON.stringify(flowData)]);
+    
+    let output = '';
+    let errorOutput = '';
+    
+    pythonProcess.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+    
+    pythonProcess.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+    
+    pythonProcess.on('close', (code) => {
+      if (code !== 0) {
+        console.error(`Python脚本执行失败: ${errorOutput}`);
+        reject(new Error(`Python脚本执行失败，退出代码: ${code}`));
+      } else {
+        resolve(output);
+      }
+    });
+  });
+}
