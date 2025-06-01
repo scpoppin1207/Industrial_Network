@@ -41,7 +41,7 @@
       <div ref="nodeC" class="node" draggable>提升机</div>
       <div ref="nodeD" class="node" draggable>货架</div>
       <!-- <button @click="handleExport">导出流程</button> -->
-      <!-- 可选导出形式 -->
+       <!-- 可选导出形式 -->
       <button @click="handleExport('json')">导出 JSON</button>
       <button @click="handleExport('sys')">导出 SYS</button>
       <input type="file" id="importFile" accept=".json" @change="handleImport" />
@@ -162,8 +162,8 @@ const handleDrop = (e) => {
       type: 'node-C',
       data: { label: '模块 C' },
       handles: {
-        inputs: [{ position: 'left', id: 'input-c' }],
-        outputs: []
+        inputs: [{ position: 'top', id: 'input-c' }],
+        outputs: [{ position: 'right', id: 'output-c' }]
       }
     },
     D: {
@@ -177,7 +177,6 @@ const handleDrop = (e) => {
   }
   
   const config = nodeConfigs[type]
-  console.log('创建节点时的 config.data:', config.data) 
   // 添加节点
   addNodes({
     id: `${type}-${Date.now()}`,
@@ -187,6 +186,7 @@ const handleDrop = (e) => {
     ...config.data,
     inputs: config.handles.inputs.map(h => h.id),
     outputs: config.handles.outputs.map(h => h.id),
+    floor: 1, // 默认楼层 1
     style: {
         background: '#fff',
         padding: '5px',
@@ -202,6 +202,8 @@ const handleDrop = (e) => {
 // 连接事件处理
 // 当用户在 Vue Flow 画布上连接两个节点时，Vue Flow 会触发 connect 事件，onConnect 函数就会被调用，
 // 参数是连接的信息（如起点、终点等）。
+// 找到起点和终点节点
+
 const onConnect = (params) => {
   const result = validateConnection(params, edges.value, nodes.value)
   if (!result.valid) {
@@ -210,6 +212,28 @@ const onConnect = (params) => {
     errorKey.value += 1
     return
   }
+  const sourceNode = nodes.value.find(n => n.id === params.source)
+  const targetNode = nodes.value.find(n => n.id === params.target)
+  if (sourceNode && targetNode) {
+  // 判断是否是提升机（举例：假设 type 为 'node-C' 的是提升机）
+  const isSourceElevator = sourceNode.type === 'node-C'
+  const isTargetElevator = targetNode.type === 'node-C'
+
+  // 获取 source 楼层
+  const sourceFloor = sourceNode.data.floor ?? 1
+
+  if (isSourceElevator && !isTargetElevator) {
+    targetNode.data.floor = sourceFloor + 1
+  } else if (!isSourceElevator && isTargetElevator) {
+    targetNode.data.floor = sourceFloor
+  } else if (!isSourceElevator && !isTargetElevator) {
+    targetNode.data.floor = sourceFloor
+  }
+
+  // 触发响应式更新（Vue 不检测深层变更）
+  targetNode.data = { ...targetNode.data }
+  }
+
 
   edges.value = addEdge({
     ...params,

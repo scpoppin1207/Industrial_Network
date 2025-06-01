@@ -42,9 +42,7 @@ const sendToBackend = async () => {
       body: JSON.stringify({ content: userInput.value })
     })
     const data = await res.json()
-    response.value = data.reply // 这是LLM提取后的数组
-    // response.value = data.flow // 这是来自后端的json文件
-
+    response.value = data.reply
     // setTimeout(closeDialog, 2000) // 2秒后自动关闭
   } catch (e) {
     response.value = '请求失败'

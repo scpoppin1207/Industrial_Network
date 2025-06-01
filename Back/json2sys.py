@@ -26,6 +26,7 @@ def convert_json_to_xml(json_data):
         "output-b3": "B3",
         # 提升机 (C)
         "input-c": "IN",
+        "output-c": "OUT",
         # 货架 (D)
         "input-d": "IN",
         "output-d": "OUT"
@@ -43,6 +44,7 @@ def convert_json_to_xml(json_data):
         "output-b3": "QO3",
         # 提升机 (C)
         "input-c": "QI",
+        "output-c": "QO",
         # 货架 (D)
         "input-d": "QI",
         "output-d": "QO"

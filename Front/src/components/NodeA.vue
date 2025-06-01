@@ -1,12 +1,16 @@
 <script setup>
 import { Handle, Position } from '@vue-flow/core'
 import { ResizeRotateNode } from '@vue-flow/resize-rotate-node'
-import { ref, watchEffect} from 'vue'
 import my_transfer from '@/assets/transfer.png'
 // 获取 props
 const props = defineProps(['id', 'data', 'selected', 'resize', 'rotate', 'setRef'])
 
-
+const getFloorColor = (floor) => {
+  const maxFloor = 10
+  const level = Math.min(floor || 0, maxFloor) // 控制最大值
+  const intensity = 255 - Math.floor((level / maxFloor) * 200) // 范围控制在[55,255]
+  return `rgb(${intensity}, ${intensity}, ${intensity})` // 灰度色
+}
 </script>
 
 <template>
@@ -15,8 +19,9 @@ const props = defineProps(['id', 'data', 'selected', 'resize', 'rotate', 'setRef
     :data="props.data"
   >
    <div class="node-wrapper" >
-    <div class="custom-node a">
+    <div class="custom-node a" :style="{ backgroundColor: getFloorColor(props.data.floor) }">
       <div class="node-title">{{ "输送机" }}</div>
+      <div class="floor-display">楼层: {{ props.data.floor }}</div>
       <div class="image-container">
           <img :src="my_transfer" alt="模块图示" class="node-image" />
         </div>
@@ -128,5 +133,12 @@ const props = defineProps(['id', 'data', 'selected', 'resize', 'rotate', 'setRef
 .custom-handle:hover {
   background: #b8ababd3;
   cursor: crosshair;
+}
+
+.floor-display {
+  text-align: center;
+  font-size: 14px;
+  margin: 8px 0;
+  color: #555;
 }
 </style>
