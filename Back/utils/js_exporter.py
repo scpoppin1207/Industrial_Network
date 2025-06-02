@@ -66,15 +66,15 @@ def grids_to_flow(device_grid, connection_grid):
                 outputs = ["output-b1", "output-b2", "output-b3"]
                 handles = [
                     {"position": "left", "id": "input-b", "type": "target"},
-                    {"position": "left", "id": "output-b1", "type": "source"},
-                    {"position": "right", "id": "output-b2", "type": "source"},
-                    {"position": "bottom", "id": "output-b3", "type": "source"}
+                    {"position": "top", "id": "output-b1", "type": "source"},
+                    {"position": "bottom", "id": "output-b2", "type": "source"},
+                    {"position": "right", "id": "output-b3", "type": "source"}
                 ]
             elif device_type == 'L':  # 提升机
                 inputs = ["input-c"]
                 outputs = []
                 handles = [
-                    {"position": "top", "id": "input-c", "type": "target"}
+                    {"position": "left", "id": "input-c", "type": "target"}
                 ]
             elif device_type == 'S': # 货架
                 inputs = ["input-d"]

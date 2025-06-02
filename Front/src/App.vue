@@ -10,12 +10,14 @@
         @connect="onConnect"
         fit-view-on-init
         :nodes-draggable="true"
+        @nodes-change = "onNodesChange"
+        @edges-change = "onEdgesChange"
       >
        <MiniMap pannable zoomable />
       <!-- Vue flow的node-types属性绑定在nodeTypes变量上 Vue flow的pane-ready事件绑定在onPaneReady函数上，事件发生会触发onPaneReady函数 -->
 
        <template #node-A="props">
-          <NodeA :v-bind="props" />
+          <NodeA v-bind="props" />
        </template>
       
         <template #node-B="props">
@@ -44,10 +46,13 @@
       <!-- 可选导出形式 -->
       <button @click="handleExport('json')">导出 JSON</button>
       <button @click="handleExport('sys')">导出 SYS</button>
-      <input type="file" id="importFile" accept=".json" @change="handleImport" />
+      <!-- <input type="file" id="importFile" accept=".json" @change="handleImport" /> -->
+      <!-- 导入按钮，只负责触发 file input -->
+      <input type="file" accept=".json" @change="handleImport" ref="fileInputRef" style="display: none;" />
+      <button @click="fileInputRef.click()">导入 JSON</button>
     </div>
 
-  <WelcomeDialog v-model="dialogVisible" />
+  <WelcomeDialog v-model="dialogVisible" @flow-generated="handleFlowGenerated" />
   <ErrorOverlay :message="errorMessage" :errkey="errorKey" />
   </div>
  
@@ -55,7 +60,7 @@
 
 <script setup>
 import { ref, onMounted , nextTick, markRaw} from 'vue'
-import { VueFlow, addEdge, useVueFlow, MarkerType} from '@vue-flow/core'
+import { VueFlow, useVueFlow, MarkerType, applyNodeChanges, applyEdgeChanges } from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
 import '@vue-flow/minimap/dist/style.css'
 import { validateConnection } from './utils/connectionRules' // 连接规则函数
@@ -79,8 +84,14 @@ const nodeTypes = {
 }
 
 // 定义画布上的节点和边
-const nodes = ref([]) // 画布上的节点数组
-const edges = ref([]) // 画布上的边数组
+// 使用 ref 管理节点和边
+const nodes = ref([])
+const edges = ref([])
+const { project, addNodes, addEdges, fitView } = useVueFlow()
+const vueFlowInstance = ref(null)
+const fileInputRef = ref(null)
+const paneEl = ref(null)
+let pendingFlow = null
 
 
 // 用于引用side bar中的节点，而非实际的 Vue Flow 节点
@@ -93,14 +104,12 @@ const nodeD = ref(null)
 const errorMessage = ref('')
 const errorKey = ref(0)
 
-// 从 VueFlow 提供的 hook 中获取工具函数
-const { project, addNodes } = useVueFlow()
-const paneEl = ref(null) // pane DOM 元素
-const vueFlowInstance = ref(null)
+
 
 // 画布准备好后触发，用于绑定拖放事件
 const onPaneReady = (instance) => {
   vueFlowInstance.value = instance
+
   // 通过 DOM 查询直接获取 pane 元素
   const pane = document.querySelector('.vue-flow__pane')
   if (!pane) {
@@ -116,6 +125,12 @@ const onPaneReady = (instance) => {
   // pane元素添加拖放事件监听器，'drop'事件触发时调用handleDrop函数
   pane.addEventListener('drop', handleDrop) 
   console.log('☺️pane start')
+
+  if (pendingFlow) {
+    // 如果有待处理的 flow，直接设置到 pane
+    handleFlowGenerated(pendingFlow)
+    pendingFlow = null // 清空待处理 flow
+  }
 }
 
 // 拖放添加节点处理函数
@@ -211,7 +226,7 @@ const onConnect = (params) => {
     return
   }
 
-  edges.value = addEdge({
+  addEdges({
     ...params,
     animated: true,       // 边是否动画
     style: {                 // 可选：边的线条样式
@@ -221,13 +236,10 @@ const onConnect = (params) => {
     markerEnd: {             // 可选：终点箭头样式
       type: MarkerType.ArrowClosed,
       color: '#674ea7',
-    },        // 可选：边的类型，default / step / smoothstep / straight 等
-  }, edges.value)
+    },
+  })
 }
 
-//edges.value是当前的边 数组
-//params：Vue Flow 触发 connect 事件时传递的参数，包含新连线的起点、终点等信息
-//onConnect 函数会将新连接的边添加到 edges 数组中，并设置为动画状态。
 
 // 拖拽开始
 const onDragStart = (event, type) => {
@@ -281,11 +293,67 @@ const handleExport = (format = 'json') => {
   }, format === 'sys')
 }
 
-const handleImport = (event) => {
-  importFlow(vueFlowInstance.value, event, (message) => {
-    errorMessage.value = message
-    errorKey.value += 1
-  })
+function onNodesChange(changes) {
+  nodes.value = applyNodeChanges(changes, nodes.value)
+}
+
+function onEdgesChange(changes) {
+  edges.value = applyEdgeChanges(changes, edges.value)
+}
+
+
+/** ———— 导入按钮绑定 —— **/
+function handleImport(event) {
+  /**
+   * 原来我们写的是：importFlow(vueFlowInstance.value, event, onError)
+   * 现在改为：importFlow(event, onSuccess, onError)
+   */
+  importFlow(
+    event,
+    (data) => {
+      nodes.value = data.nodes || []
+      edges.value = data.edges || []
+
+      // 2. 如果有 viewport，则设置
+      if (data.viewport) {
+        vueFlowInstance.value.setViewport(data.viewport)
+      }
+
+      // 3. 最后 fitView
+      if (vueFlowInstance.value) {
+        fitView()
+      }
+    },
+    (msg) => {
+      errorMessage.value = msg
+      errorKey.value += 1
+    }
+  )
+}
+
+/** ———— “AI 生成流程” 的回调 —— **/
+function handleFlowGenerated(flow) {
+  if (vueFlowInstance.value) {
+    try {
+      nodes.value = flow.nodes || []
+      edges.value = flow.edges || []
+
+      // 如果有 viewport 信息，就让实例设置一下
+      if (flow.viewport) {
+        vueFlowInstance.value.setViewport(flow.viewport)
+      }
+
+      // 导入完成或生成完成后，把画布 fit 到可视区
+      fitView()
+    } catch (error) {
+      console.error('❌ 处理流程生成时出错:', error)
+      errorMessage.value = '流程生成失败，请检查数据格式'
+      errorKey.value += 1
+    }
+  } else {
+    // 还没 ready，把 flow 缓存起来，等 pane-ready 再真正设置
+    pendingFlow = flow
+  }
 }
 
 </script>

@@ -13,7 +13,7 @@
   </div>
 </template>
 
-<script setup>
+<!-- <script setup>
 import { ref, defineProps, defineEmits } from 'vue'
 
 const props = defineProps({
@@ -48,6 +48,51 @@ const sendToBackend = async () => {
     // setTimeout(closeDialog, 2000) // 2秒后自动关闭
   } catch (e) {
     response.value = '请求失败'
+  } finally {
+    loading.value = false
+  }
+}
+</script> -->
+
+<script setup>
+import { ref, defineProps, defineEmits } from 'vue'
+
+const props = defineProps({
+  modelValue: { type: Boolean, default: true }
+})
+
+const emit = defineEmits(['update:modelValue', 'flow-generated']) 
+
+const visible = ref(props.modelValue)
+const userInput = ref('')
+const loading = ref(false)
+const response = ref('')
+
+const closeDialog = () => {
+  visible.value = false
+  emit('update:modelValue', false) 
+}
+
+const sendToBackend = async () => {
+  loading.value = true
+  response.value = ''
+  try {
+    // 假设后端接口为 /api/dialog
+    const res = await fetch('/api/dialog', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: userInput.value })
+    })
+    const data = await res.json()
+    response.value = data.reply // 这是LLM提取后的数组
+    if (data.flow) {
+      emit('flow-generated', data.flow) // 触发 flow-generated 事件
+      closeDialog() // 发送成功后关闭对话框
+    } else {
+      response.value = '未生成流程，请检查输入或稍后再试。'
+    }
+  } catch (e) {
+    response.value = '请求失败。'
   } finally {
     loading.value = false
   }
