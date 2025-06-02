@@ -53,8 +53,8 @@ app.post('/api/dialog', async (req, res) => {
     messages: [
       { 
         role: 'system', 
-        content: '你是一个仓储运输设计者。你接收到一段仓储设计的需求后，从中提炼出以下两个信息： \
-        总共有几个源头货架；每个源头货架对应几个目标货架；用数组来回答。比如你提炼出来总共用3个源头货架，分别有3个、1个、10个目的货架，你就返回(3,1,10)。只用回答数组，其他的什么都不用回答。' 
+        content: '你是一个仓储运输设计者。你接收到一段仓储设计的需求后，从中提炼出以下信息： \
+        每个源头货架在各个楼层分别对应几个目标货架；用数组来回答。比如你提炼出来总共有2个源头货架，其中一个在1,2层分别有1个和3个目标货架,另一个在1层有2个目标货架，你就返回((1,3),(2))。只用回答数组，其他的什么都不用回答。' 
       },
       { role: 'user', content }
     ],
@@ -65,22 +65,13 @@ app.post('/api/dialog', async (req, res) => {
   try {
     const response = await axios.post(API_URL, data, { headers })
     const reply = response.data.choices[0].message.content
+
+    // 由python代为解析响应
+    const numbers = reply
+    console.log(`✅ 解析到的提升机数量数组: ${numbers}`)
     
-    // 1. 解析LLM返回的数组
-    // 尝试从回复中提取数字数组
-    const arrayMatch = reply.match(/\(([\d,\s]+)\)|\[([\d,\s]+)\]/)
-    if (!arrayMatch) {
-      throw new Error('无法从LLM回复中解析数组')
-    }
-    
-    // 提取匹配到的数组字符串（可能是第一个或第二个捕获组）
-    const arrayStr = arrayMatch[1] || arrayMatch[2]
-    const numbers = arrayStr.split(',').map(num => parseInt(num.trim()))
-    
-    console.log(`✅ 解析到的提升机数量数组: [${numbers}]`)
-    
-    // 2. 调用js_gen.py生成json
-    runPythonScript('js_gen.py', [JSON.stringify(numbers)], (error, jsonOutput) => {
+    // 2. 调用js_gen_level.py生成json
+    runPythonScript('js_gen_level.py', [JSON.stringify(numbers)], (error, jsonOutput) => {
       if (error) {
         console.error('生成JSON失败:', error.message)
         return res.status(500).json({ error: '生成JSON失败' })
@@ -90,7 +81,6 @@ app.post('/api/dialog', async (req, res) => {
         // 解析js_gen.py的输出
         const flowJson = JSON.parse(jsonOutput)
         console.log('✅ JSON数据生成成功')
-        console.log(flowJson)
         
         // 4. 返回结果给前端
         res.json({ 

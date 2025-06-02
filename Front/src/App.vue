@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <!-- 左侧画布区域 -->
-    <div class="canvas-area">
+    <div class="canvas-area" @keydown.delete="handleKeyDelete" tabindex="0">
       <VueFlow
         v-model:nodes="nodes"  
         v-model:edges="edges"
@@ -12,6 +12,7 @@
         :nodes-draggable="true"
         @nodes-change = "onNodesChange"
         @edges-change = "onEdgesChange"
+        @node-click = "onNodeClick"
       >
        <MiniMap pannable zoomable />
       <!-- Vue flow的node-types属性绑定在nodeTypes变量上 Vue flow的pane-ready事件绑定在onPaneReady函数上，事件发生会触发onPaneReady函数 -->
@@ -60,7 +61,7 @@
 
 <script setup>
 import { ref, onMounted , nextTick, markRaw} from 'vue'
-import { VueFlow, useVueFlow, MarkerType, applyNodeChanges, applyEdgeChanges } from '@vue-flow/core'
+import { VueFlow, addEdge, useVueFlow, MarkerType, applyNodeChanges, applyEdgeChanges } from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
 import '@vue-flow/minimap/dist/style.css'
 import { validateConnection } from './utils/connectionRules' // 连接规则函数
@@ -87,10 +88,11 @@ const nodeTypes = {
 // 使用 ref 管理节点和边
 const nodes = ref([])
 const edges = ref([])
-const { project, addNodes, addEdges, fitView } = useVueFlow()
+const { project, addNodes, addEdges, fitView, findNode } = useVueFlow()
 const vueFlowInstance = ref(null)
 const fileInputRef = ref(null)
 const paneEl = ref(null)
+const selectedNodeId = ref(null) // 存储当前选中的节点ID
 let pendingFlow = null
 
 
@@ -131,6 +133,99 @@ const onPaneReady = (instance) => {
     handleFlowGenerated(pendingFlow)
     pendingFlow = null // 清空待处理 flow
   }
+}
+
+// 节点点击事件
+const onNodeClick = (event) => {
+  const node = event.node; // Extract the node object from the event
+  if (node && node.id) {
+    console.log('Node ID:', node.id); // Log the node ID
+    selectedNodeId.value = node.id; // Update the selectedNodeId
+  } else {
+    console.warn('Node data is not available or node ID is missing');
+  }
+};
+
+// 修改后的 handleKeyDelete 函数
+const handleKeyDelete = (event) => {
+  // 调试信息
+  console.log('Delete key pressed:', document.activeElement);
+  console.log('Delete键按下', {
+    selectedNodeId: selectedNodeId.value,
+    vueFlowInstance: !!vueFlowInstance.value,
+    event
+  })
+
+  if (!selectedNodeId.value) {
+    console.warn('没有选中的节点')
+    return
+  }
+
+  // 阻止默认行为（如果有）
+  event.preventDefault()
+
+  // 确保VueFlow实例可用
+  if (!vueFlowInstance.value) {
+    console.error('VueFlow实例未初始化')
+    return
+  }
+
+  // 1. 找出所有要删除的边
+  const edgeIdsToRemove = edges.value
+    .filter(edge => edge.source === selectedNodeId.value || 
+                   edge.target === selectedNodeId.value)
+    .map(edge => edge.id)
+
+  // 调试信息
+  console.log('要删除的边:', edgeIdsToRemove)
+
+  // 2. 获取要删除的节点
+  const nodeToRemove = findNode(selectedNodeId.value)
+  console.log('要删除的节点:', nodeToRemove)
+
+  try {
+    // 3. 执行删除
+    if (edgeIdsToRemove.length > 0) {
+      vueFlowInstance.value.removeEdges(edgeIdsToRemove)
+    }
+    vueFlowInstance.value.removeNodes([selectedNodeId.value])
+
+    // 4. 特殊处理提升机删除
+    if (nodeToRemove?.type === 'node-C') {
+      handleElevatorRemoval(nodeToRemove)
+    }
+
+    selectedNodeId.value = null
+    fitView()
+    console.log('删除成功')
+  } catch (error) {
+    console.error('删除失败:', error)
+  }
+}
+
+// 处理提升机删除后的楼层逻辑
+const handleElevatorRemoval = (removedElevator) => {
+  const elevatorFloor = removedElevator.data.floor || 1
+  
+  // 找出所有连接到该提升机的节点
+  const connectedNodes = edges.value.reduce((acc, edge) => {
+    if (edge.source === removedElevator.id) {
+      const node = findNode(edge.target)
+      if (node) acc.push(node)
+    }
+    if (edge.target === removedElevator.id) {
+      const node = findNode(edge.source)
+      if (node) acc.push(node)
+    }
+    return acc
+  }, [])
+  
+  // 更新这些节点的楼层
+  connectedNodes.forEach(node => {
+    if (node.type !== 'node-C') { // 不是提升机
+      node.data.floor = elevatorFloor
+    }
+  })
 }
 
 // 拖放添加节点处理函数
@@ -177,8 +272,8 @@ const handleDrop = (e) => {
       type: 'node-C',
       data: { label: '模块 C' },
       handles: {
-        inputs: [{ position: 'left', id: 'input-c' }],
-        outputs: []
+        inputs: [{ position: 'top', id: 'input-c' }],
+        outputs: [{ position: 'right', id: 'output-c' }]
       }
     },
     D: {
@@ -226,6 +321,30 @@ const onConnect = (params) => {
     return
   }
 
+  // 加入楼层处理逻辑
+  const sourceNode = nodes.value.find(n => n.id === params.source)
+  const targetNode = nodes.value.find(n => n.id === params.target)
+  if (sourceNode && targetNode) {
+  // 判断是否是提升机（举例：假设 type 为 'node-C' 的是提升机）
+  const isSourceElevator = sourceNode.type === 'node-C'
+  const isTargetElevator = targetNode.type === 'node-C'
+
+  // 获取 source 楼层
+  const sourceFloor = sourceNode.data.floor ?? 1
+
+  if (isSourceElevator && !isTargetElevator) {
+    targetNode.data.floor = sourceFloor + 1
+  } else if (!isSourceElevator && isTargetElevator) {
+    targetNode.data.floor = sourceFloor
+  } else if (!isSourceElevator && !isTargetElevator) {
+    targetNode.data.floor = sourceFloor
+  }
+
+  // 触发响应式更新（Vue 不检测深层变更）
+  targetNode.data = { ...targetNode.data }
+  }
+
+  // 修改边处理函数
   addEdges({
     ...params,
     animated: true,       // 边是否动画
@@ -236,7 +355,7 @@ const onConnect = (params) => {
     markerEnd: {             // 可选：终点箭头样式
       type: MarkerType.ArrowClosed,
       color: '#674ea7',
-    },
+    },        // 可选：边的类型，default / step / smoothstep / straight 等
   })
 }
 
@@ -411,6 +530,8 @@ html, body, #app {
   -webkit-user-drag: element; /* macOS Safari 支持 */
 }
 
-
+.vue-flow__node.selected {
+  box-shadow: 0 0 0 2px #ff0000;
+}
 
 </style>
