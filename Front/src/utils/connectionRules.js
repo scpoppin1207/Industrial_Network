@@ -16,21 +16,21 @@ export function validateConnection(params, edges, nodes) {
   const { source, sourceHandle, target, targetHandle } = params
 
   if (source === target) {
-    return { valid: false, reason: '❌ 不能连接节点自身' ,code: '别他妈自己连自己！'}
+    return { valid: false, reason: '❌ 不能连接节点自身' ,code: '不能连接节点自身'}
   }
 
   const isTargetHandleUsed = edges.some(
     (e) => e.target === target && e.targetHandle === targetHandle
   )
   if (isTargetHandleUsed) {
-    return { valid: false, reason: '❌ 输入口已被连接' ,code: '别他妈连已连接的输入口！'}
+    return { valid: false, reason: '❌ 输入口已被连接' ,code: '输入口已被连接'}
   }
 
   const isSourceHandleUsed = edges.some(
     (e) => e.source === source && e.sourceHandle === sourceHandle
   )
   if (isSourceHandleUsed) {
-    return { valid: false, reason: '❌ 输出口已被连接' ,code: '别他妈连已连接的输出口！'}
+    return { valid: false, reason: '❌ 输出口已被连接' ,code: '输出口已被连接'}
   }
 
   const sourceNode = nodes.find((n) => n.id === source)
@@ -40,7 +40,7 @@ export function validateConnection(params, edges, nodes) {
   const targetIsInput = targetNode?.data?.inputs?.includes(targetHandle)
 
   if (!sourceIsOutput || !targetIsInput) {
-    return { valid: false, reason: '❌ 连接错误：必须从输出口连接到输入口', code: '必须从输出口连接到输入口,你傻逼啊！' }
+    return { valid: false, reason: '❌ 连接错误：必须从输出口连接到输入口', code: '必须从输出口连接到输入口' }
   }
 
   return { valid: true }

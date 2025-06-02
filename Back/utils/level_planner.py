@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
-def plan_3d_flow(n_outputs:list[list[int]]):
+def plan_3d_flow(n_outputs):
     """
     规划货架到提升机的物料流路径
     :param n_outputs: [[n1,n2],...]表示每个货架在各层的出货口（货架）数量
@@ -11,9 +11,18 @@ def plan_3d_flow(n_outputs:list[list[int]]):
     n_shelves = len(n_outputs)
     # 计算所需网格大小 (行数基于输出设备数)，一层5列，每多一层就加4列
     cnt, rows = 1, 0
-    for x in n_outputs:
+    for idx, x in enumerate(n_outputs):
         rows += sum(x)
-        cnt = max(cnt, len(x))
+        # cnt = max(cnt, len(x))
+        # 清除掉后缀中的0
+        n1, n2 = 0, 0
+        for y in x:
+            n1 += 1
+            if y != 0:
+                n2 = n1
+        n_outputs[idx] = x[:n2]
+        cnt = max(cnt, len(x[:n2]))
+        
     cols = 5 + 4*(cnt-1)
     
     # 初始化设备栅格图 (字符表示)

@@ -11,9 +11,8 @@ const PORT = 3000
 
 app.use(express.json())
 
-// ✅ 替换成你自己的 API Key 和 endpoint
 const API_URL = 'https://maas-cn-east-4.modelarts-maas.com/v1/infers/5f114f77-65c2-4e79-82df-d84b25b89d42/v1/chat/completions'
-const API_KEY = 'vWUQVo7N1__ZejNJj7JKIeXVKRele2xY1sIOe8hxtsvDsU0PFNQtEKJCJWlRbD9LUwbx1kJvTc7iO4k416kzYg' // <- 替换成你自己的
+const API_KEY = 'vWUQVo7N1__ZejNJj7JKIeXVKRele2xY1sIOe8hxtsvDsU0PFNQtEKJCJWlRbD9LUwbx1kJvTc7iO4k416kzYg' 
 
 // 调用Python脚本的函数
 function runPythonScript(scriptName, args, callback) {
@@ -53,9 +52,21 @@ app.post('/api/dialog', async (req, res) => {
     messages: [
       { 
         role: 'system', 
-        content: '你是一个仓储运输设计者。你接收到一段仓储设计的需求后，从中提炼出以下信息： \
-        每个源头货架在各个楼层分别对应几个目标货架；用数组来回答。比如你提炼出来总共有2个源头货架，其中一个在1,2层分别有1个和3个目标货架,另一个在1层有2个目标货架，你就返回((1,3),(2))。只用回答数组，其他的什么都不用回答。' 
+        content: '你是一个仓储运输设计者。你接收到一段仓储设计的需求后，从中一步步提炼出以下信息并最终组织好信息返回一个嵌套元组： \
+        1.有几个源头货架； \
+        2.最高的层数是多少；\
+        2.每个源头货架有几个目的货架； \
+        3.每个源头的目的货架是如何在楼层上分布的； \
+        最后得到数组按照如下规则组织： \
+        1. 每个源头货架对应一个数组，数组的长度等于最高楼层数（比如最高有4层，则每个源头货架对应的数组长度就是4）； \
+        2. 数组的每个元素表示该源头货架在对应楼层上的n目的货架数量，如果没有目的货架则用0补齐； \
+        3. 最后用一个元组包裹所有源头货架的数组。 \
+        给出两个示例： \
+        我有2个源仓库，第一个源仓库共有3个终点，在一楼有1一个终点，在3楼有2个终点；第二个仓库有2个终点，在一楼有1个终点，在二楼有一个终点。返回：((1,0,2),(1,1,0)) \
+        我有3个源仓库，第一个源仓库共有1个终点，在三楼有一个终点；第二个源仓库有2个终点，一个在1楼，一个在2楼；第三个源仓库有3个终点，在1楼有1个终点，在2楼有2个终点。返回：((0,0,1),(1,1,0),(1,2,0)) \
+        记住，你只用回答数组，其他的什么都不用回答。' 
       },
+    
       { role: 'user', content }
     ],
     stream: false,
