@@ -2,6 +2,7 @@
     <div class="app-container">
       <!-- 左侧画布区域 -->
       <div class="canvas-area" @keydown.delete="handleKeyDelete" tabindex="0">
+        <div class="background-animation"></div>
         <VueFlow
           v-model:nodes="nodes"  
           v-model:edges="edges"
@@ -14,7 +15,7 @@
           @edges-change = "onEdgesChange"
           @node-click = "onNodeClick"
         >
-        <MiniMap pannable zoomable />
+        <MiniMap pannable zoomable :node-color="nodeColor" />
         <!-- Vue flow的node-types属性绑定在nodeTypes变量上 Vue flow的pane-ready事件绑定在onPaneReady函数上，事件发生会触发onPaneReady函数 -->
 
         <template #node-A="props">
@@ -39,25 +40,52 @@
       <!-- 右侧模块库 -->
       <div class="sidebar">
         <div class="sidebar-title">模块库</div>
-        <div ref="nodeA" class="node" draggable>输送机</div>
-        <div ref="nodeB" class="node" draggable>移载机</div>
-        <div ref="nodeC" class="node" draggable>提升机</div>
-        <div ref="nodeD" class="node" draggable>货架</div>
-        <!-- <button @click="handleExport">导出流程</button> -->
-        <!-- 可选导出形式 -->
-        <button @click="handleExport('json')">导出 JSON</button>
-        <button @click="handleExport('sys')">导出 SYS</button>
-        <!-- <input type="file" id="importFile" accept=".json" @change="handleImport" /> -->
-        <!-- 导入按钮，只负责触发 file input -->
-        <input type="file" accept=".json" @change="handleImport" ref="fileInputRef" style="display: none;" />
-        <button @click="fileInputRef.click()">导入 JSON</button>
+        <div ref="nodeA" class="node" draggable>
+          <div class="node-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 4H8c-1.4 0-2.5 1.1-2.5 2.5v11c0 1.4 1.1 2.5 2.5 2.5h8c1.4 0 2.5-1.1 2.5-2.5v-11c0-1.4-1.1-2.5-2.5-2.5Z"/>
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 6.5c0-1.4-1.1-2.5-2.5-2.5h-7c-1.4 0-2.5 1.1-2.5 2.5v11c0 1.4 1.1 2.5 2.5 2.5h7c1.4 0 2.5-1.1 2.5-2.5v-11Z"/>
+            </svg>
+          </div>
+          <span>输送机</span>
+        </div>
+        <div ref="nodeB" class="node" draggable>
+          <div class="node-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 6h6M9 12h6M9 18h6"/>
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.8 21.5h14.4c1.3 0 2.3-1 2.3-2.3V4.8c0-1.3-1-2.3-2.3-2.3H4.8C3.5 2.5 2.5 3.5 2.5 4.8v14.4c0 1.3 1 2.3 2.3 2.3Z"/>
+            </svg>
+          </div>
+          <span>移载机</span>
+        </div>
+        <div ref="nodeC" class="node" draggable>
+          <div class="node-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 5v14m0 0-3-3m3 3 3-3"/>
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.8 21.5h14.4c1.3 0 2.3-1 2.3-2.3V4.8c0-1.3-1-2.3-2.3-2.3H4.8C3.5 2.5 2.5 3.5 2.5 4.8v14.4c0 1.3 1 2.3 2.3 2.3Z"/>
+            </svg>
+          </div>
+          <span>提升机</span>
+        </div>
+        <div ref="nodeD" class="node" draggable>
+          <div class="node-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 9v12m0 0h14M5 21V9m14 0v12M5 9h14M5 9V3m14 6V3"/>
+            </svg>
+          </div>
+          <span>货架</span>
+        </div>
+        <div class="export-buttons">
+          <button class="export-btn" @click="handleExport('json')">导出 JSON</button>
+          <button class="export-btn" @click="handleExport('sys')">导出 SYS</button>
+          <input type="file" accept=".json" @change="handleImport" ref="fileInputRef" style="display: none;" />
+          <button class="export-btn" @click="fileInputRef.click()">导入 JSON</button>
+        </div>
       </div>
 
     <WelcomeDialog v-model="dialogVisible" @flow-generated="handleFlowGenerated" />
     <ErrorOverlay :message="errorMessage" :errkey="errorKey" />
     </div>
-
- 
 </template>
 
 <script setup>
@@ -108,8 +136,6 @@ const nodeD = ref(null)
 // 错误处理相关
 const errorMessage = ref('')
 const errorKey = ref(0)
-
-
 
 // 画布准备好后触发，用于绑定拖放事件
 const onPaneReady = (instance) => {
@@ -352,12 +378,12 @@ const onConnect = (params) => {
     ...params,
     animated: true,       // 边是否动画
     style: {                 // 可选：边的线条样式
-      stroke: '#674ea7',
-      strokeWidth: 5,
+      stroke: '#1fa2ff',
+      strokeWidth: 2,
     },
     markerEnd: {             // 可选：终点箭头样式
       type: MarkerType.ArrowClosed,
-      color: '#674ea7',
+      color: '#1fa2ff',
     },        // 可选：边的类型，default / step / smoothstep / straight 等
   })
 }
@@ -477,63 +503,264 @@ function handleFlowGenerated(flow) {
   }
 }
 
+// MiniMap 节点颜色函数
+const nodeColor = (node) => {
+  switch (node.type) {
+    case 'node-A': return '#1fa2ff';
+    case 'node-B': return '#8643ff';
+    case 'node-C': return '#a6ffcb';
+    case 'node-D': return '#ff9a8b';
+    default: return '#ffcc00';
+  }
+};
+
 </script>
 
 <style>
+/* 确保前端铺满屏幕 */
 html, body, #app {
   height: 100%;
   margin: 0;
 }
-
+/* 添加深色渐变背景 */
 .app-container {
   display: flex;
   height: 100vh;
   width: 100vw;
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  position: relative;
+  overflow: hidden;
+}
+
+.background-animation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 10% 20%, rgba(41, 128, 185, 0.1) 0%, transparent 25%),
+    radial-gradient(circle at 90% 80%, rgba(46, 204, 113, 0.1) 0%, transparent 25%);
+  z-index: 0;
+  animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  100% {
+    background-position: 0% 0%;
+  }
 }
 
 .canvas-area {
   flex: 1;
   position: relative;
-  background-color: #f0f0f0;
-  background-image: linear-gradient(to right, #ccc 1px, transparent 1px),
-                    linear-gradient(to bottom, #ccc 1px, transparent 1px);
-  background-size: 20px 20px; /* 每个网格20px */
+  background-color: rgba(0, 0, 0, 0.2);
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+  z-index: 1;
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
 }
 
 .sidebar {
   user-select: none;        
   width: 360px;
-  background: white;
-  border-left: 1px solid #eee;
-  padding: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 25px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .sidebar-title {
-  font-weight: bold;
-  margin-bottom: 12px;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 15px;
+  text-align: center;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  position: relative;
+  padding-bottom: 15px;
+}
+
+.sidebar-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(to right, #1fa2ff, #a6ffcb);
+  border-radius: 2px;
 }
 
 .node {
-  padding: 12px;
-  margin-bottom: 8px;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  padding: 18px 25px;
+  margin-bottom: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 15px;
   cursor: grab;
-  transition: transform 0.1s;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.1rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.node-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(31, 162, 255, 0.2), rgba(166, 255, 203, 0.2));
+}
+
+.node-icon svg {
+  width: 24px;
+  height: 24px;
+  stroke: #1fa2ff;
+}
+
+.node:nth-child(3) .node-icon {
+  background: linear-gradient(135deg, rgba(134, 67, 255, 0.2), rgba(151, 60, 255, 0.2));
+}
+
+.node:nth-child(3) .node-icon svg {
+  stroke: #8643ff;
+}
+
+.node:nth-child(4) .node-icon {
+  background: linear-gradient(135deg, rgba(166, 255, 203, 0.2), rgba(86, 204, 242, 0.2));
+}
+
+.node:nth-child(4) .node-icon svg {
+  stroke: #a6ffcb;
+}
+
+.node:nth-child(5) .node-icon {
+  background: linear-gradient(135deg, rgba(255, 154, 139, 0.2), rgba(255, 107, 107, 0.2));
+}
+
+.node:nth-child(5) .node-icon svg {
+  stroke: #ff9a8b;
+}
+
+.node:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 .node:active {
   cursor: grabbing;
-  transform: scale(0.98);
+  transform: scale(0.98) translateY(0);
 }
 
 .node {
-  -webkit-user-drag: element; /* macOS Safari 支持 */
+  -webkit-user-drag: element; /* macOS Safari 支持 + 拖放的关键 */
+}
+
+.export-buttons {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.export-btn {
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.export-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  transform: translateY(-2px);
+}
+
+.vue-flow__node {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .vue-flow__node.selected {
-  box-shadow: 0 0 0 2px #ff0000;
+  box-shadow: 0 0 0 2px #1fa2ff;
 }
 
+.vue-flow__edge-path {
+  stroke: #1fa2ff;
+  stroke-width: 2;
+}
+
+.vue-flow__minimap {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.vue-flow__minimap-mask {
+  fill: rgba(255, 255, 255, 0.1);
+}
+
+.vue-flow__minimap-node {
+  stroke: none;
+}
+
+@media (max-width: 1200px) {
+  .sidebar {
+    width: 300px;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    padding: 15px;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+  }
+  
+  .export-buttons {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .export-btn {
+    flex: 1;
+    min-width: 120px;
+  }
+}
 </style>
