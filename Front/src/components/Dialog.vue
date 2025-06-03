@@ -55,7 +55,7 @@ const sendToBackend = async () => {
 </script> -->
 
 <script setup>
-import { ref, defineProps, defineEmits } from 'vue'
+import { ref, defineEmits } from 'vue'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: true }
