@@ -83,7 +83,29 @@
             <h2>自定义模块库</h2>
             <div class="module-count">{{ savedModules.length }} 个模块</div>
           </div>
-          
+
+
+          <div class="library-actions">
+
+            <button @click="goToSystem" class="system-button">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
+                <path fill="currentColor" d="M4,18h16c1.1,0,2-0.9,2-2V6c0-1.1-0.9-2-2-2H4C2.9,4,2,4.9,2,6v10C2,17.1,2.9,18,4,18z M4,6h16v10H4V6z M11,9 l-3.2,3.2l-1.4-1.4L4,13l4.6,4.6L15,10.4L11,9z"/>
+              </svg>
+              进入系统设计
+            </button>
+            
+            <button 
+              v-if="savedModules.length > 0" 
+              @click="clearModules" 
+              class="clear-button"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
+                <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+              </svg>
+              清空模块库
+            </button>
+          </div>
+
           <div class="module-list">
             <div v-if="savedModules.length === 0" class="empty-library">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48">
@@ -135,6 +157,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
 // 模块设计相关状态
 const userInput = ref('')
@@ -157,7 +180,11 @@ onMounted(() => {
     }
   }
 })
+const router = useRouter()
 
+const goToSystem = () => {
+  router.push('../system')
+}
 const submitDesignRequest = async () => {
   if (!userInput.value.trim()) {
     error.value = '请输入设计需求'
@@ -253,6 +280,38 @@ const copyToClipboard = () => {
         console.error('复制失败:', err)
       })
   }
+}
+
+const clearModules = () => {
+  if (confirm('确定要清空整个模块库吗？此操作不可恢复。')) {
+    savedModules.value = [] // 清空内存中的模块
+    localStorage.removeItem('savedModules') // 移除本地存储
+    
+    // 可选：显示清空成功消息
+    showNotification('模块库已成功清空', 'success')
+  }
+}
+
+// 显示通知的函数
+const showNotification = (message, type = 'info') => {
+  const notification = document.createElement('div')
+  notification.className = `notification ${type}`
+  notification.textContent = message
+  
+  document.body.appendChild(notification)
+  
+  // 添加动画效果
+  setTimeout(() => {
+    notification.classList.add('show')
+  }, 10)
+  
+  // 3秒后移除
+  setTimeout(() => {
+    notification.classList.remove('show')
+    setTimeout(() => {
+      document.body.removeChild(notification)
+    }, 300)
+  }, 3000)
 }
 </script>
 
@@ -727,5 +786,79 @@ const copyToClipboard = () => {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(31, 162, 255, 0.6);
+}
+
+.clear-button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: transparent;
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.clear-button:hover {
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.library-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.library-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* 新增通知样式 */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 15px 20px;
+  border-radius: 8px;
+  background: #2c3e50;
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  transform: translateY(-20px);
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  max-width: 300px;
+  border-left: 4px solid #3498db;
+}
+
+.notification.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.notification.success {
+  border-left-color: #2ecc71;
+}
+
+.notification.error {
+  border-left-color: #e74c3c;
+}
+
+.system-button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(31, 162, 255, 0.1);
+  color: #1fa2ff;
+  border: none;
 }
 </style>

@@ -16,7 +16,7 @@
           @node-click = "onNodeClick"
         >
         <MiniMap pannable zoomable :node-color="nodeColor" />
-        <!-- Vue flow的node-types属性绑定在nodeTypes变量上 Vue flow的pane-ready事件绑定在onPaneReady函数上，事件发生会触发onPaneReady函数 -->
+
 
         <template #node-A="props">
             <NodeA v-bind="props" />
@@ -32,6 +32,10 @@
 
           <template #node-D="props">
               <NodeD v-bind="props" />
+          </template>
+
+          <template v-for="(nodeConfig, index) in customNodes" :key="`custom-node-${index}`" #[`node-custom-${nodeConfig.id}`]="props">
+              <CustomNode v-bind="props" :nodeConfig="nodeConfig" />
           </template>
 
         </VueFlow>
@@ -75,6 +79,25 @@
           </div>
           <span>货架</span>
         </div>
+
+        <div 
+        v-for="(node, index) in customNodes" 
+        :key="index" 
+        class="node custom-node" 
+        draggable
+        @dragstart="e => onCustomDragStart(e, node)"
+        @dragend="onDragEnd"
+      >
+          <div class="node-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 4H8c-1.4 0-2.5 1.1-2.5 2.5v11c0 1.4 1.1 2.5 2.5 2.5h8c1.4 0 2.5-1.1 2.5-2.5v-11c0-1.4-1.1-2.5-2.5-2.5Z"/>
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 6.5c0-1.4-1.1-2.5-2.5-2.5h-7c-1.4 0-2.5 1.1-2.5 2.5v11c0 1.4 1.1 2.5 2.5 2.5h7c1.4 0 2.5-1.1 2.5-2.5v-11Z"/>
+            </svg>
+          </div>
+          <span>{{ node.name }}</span>
+        </div>
+
+
         <div class="export-buttons">
           <button class="export-btn" @click="handleExport('json')">导出 JSON</button>
           <button class="export-btn" @click="handleExport('sys')">导出 SYS</button>
@@ -107,6 +130,9 @@ import NodeB from './NodeB.vue'
 import NodeC from './NodeC.vue'
 import NodeD from './NodeD.vue'
 
+// 导入自定义节点组件
+import CustomNode from './CustomNode.vue'
+
 // 注册节点类型， Vue Flow 会识别‘node-A’类型并在画布上渲染NodeA组件
 const nodeTypes = {
   'node-A': markRaw(NodeA), // 使用 markRaw 确保组件不会被 Vue 的响应式系统处理
@@ -116,7 +142,6 @@ const nodeTypes = {
 }
 
 // 定义画布上的节点和边
-// 使用 ref 管理节点和边
 const nodes = ref([])
 const edges = ref([])
 const { project, addNodes, addEdges, fitView, findNode } = useVueFlow()
@@ -126,6 +151,9 @@ const paneEl = ref(null)
 const selectedNodeId = ref(null) // 存储当前选中的节点ID
 let pendingFlow = null
 
+// 错误处理相关
+const errorMessage = ref('')
+const errorKey = ref(0)
 
 // 用于引用side bar中的节点，而非实际的 Vue Flow 节点
 const nodeA = ref(null)
@@ -133,9 +161,47 @@ const nodeB = ref(null)
 const nodeC = ref(null)
 const nodeD = ref(null) 
 
-// 错误处理相关
-const errorMessage = ref('')
-const errorKey = ref(0)
+// 自定义节点配置
+const customNodes = ref([])
+
+// 从localStorage加载自定义模块
+const loadCustomModules = () => {
+  try {
+    const saved = localStorage.getItem('savedModules')
+    if (!saved) return []
+    
+    const modules = JSON.parse(saved)
+    return modules.map(module => {
+      // 解析输入输出数量
+      const inputCount = module.content.inputs?.length || 0
+      const outputCount = module.content.outputs?.length || 0
+      console.log('加载自定义模块:', module.name, '输入:', inputCount, '输出:', outputCount)
+      return {
+        id: module.id,
+        name: module.name,
+        content: module.content,
+        inputs: inputCount,
+        outputs: outputCount,
+        timestamp: module.timestamp,
+        userInput: module.userInput,
+        type: `custom-${module.id}` // 唯一的节点类型标识
+      }
+    })
+  } catch (e) {
+    console.error('解析自定义模块失败:', e)
+    return []
+  }
+}
+
+const registerCustomNodeTypes = () => {
+  console.log(`尝试注册模块库的自定义节点类型...`)
+  customNodes.value.forEach(node => {
+    if (!nodeTypes[node.type]) {
+      nodeTypes[node.type] = markRaw(CustomNode)
+      console.log(`成功注册自定义节点类型: ${node.type}`)
+    }
+  })
+}
 
 // 画布准备好后触发，用于绑定拖放事件
 const onPaneReady = (instance) => {
@@ -259,23 +325,32 @@ const handleElevatorRemoval = (removedElevator) => {
 
 // 拖放添加节点处理函数
 const handleDrop = (e) => {
-  // e 表示拖放事件
   e.preventDefault()
 
-  // 获取拖放的节点类型
-  const type = e.dataTransfer.getData('application/node-type') //A B C
-  if (!type) return
+  // 优先获取自定义节点配置
+  const nodeConfigJson = e.dataTransfer.getData('application/node-config')
+  if (nodeConfigJson) {
+    console.log('拖放自定义节点配置:', nodeConfigJson)
+    let nodeConfig = null
+    try {
+      nodeConfig = JSON.parse(nodeConfigJson)
+    } catch (e) {
+      console.error('解析自定义节点配置失败:', e)
+      return
+    }
+    // 获取鼠标在canvas中的位置
+    const canvasRect = paneEl.value.getBoundingClientRect()
+    const viewportX = e.clientX - canvasRect.left
+    const viewportY = e.clientY - canvasRect.top
+    const position = project({ x: viewportX, y: viewportY })
+    addCustomNode(nodeConfig, position)
+    return
+  }
 
-  // 获取鼠标在canvas中的位置
-  const canvasRect = paneEl.value.getBoundingClientRect() // 获取画布的边界矩形
-  const viewportX = e.clientX - canvasRect.left
-  const viewportY = e.clientY - canvasRect.top
+  // 基础节点拖拽
+  const type = e.dataTransfer.getData('application/node-type')
 
-  // 转换为 Vue Flow 坐标 （逻辑坐标）
-  // project 是 Vue Flow 提供的函数，用于将屏幕坐标转换为逻辑坐标
-  const position = project({ x: viewportX, y: viewportY })
-
-  // 根据拖放的节点类型，获取对应的节点配置
+  // ...原有基础节点逻辑...
   const nodeConfigs = {
     A: {
       type: 'node-A',
@@ -314,33 +389,39 @@ const handleDrop = (e) => {
       }
     }
   }
-  
+
   const config = nodeConfigs[type]
-  console.log('创建节点时的 config.data:', config.data) 
-  // 添加节点
+  if (!config) {
+    console.warn('未知的基础节点类型:', type)
+    return
+  }
+
+  const canvasRect = paneEl.value.getBoundingClientRect()
+  const viewportX = e.clientX - canvasRect.left
+  const viewportY = e.clientY - canvasRect.top
+  const position = project({ x: viewportX, y: viewportY })
+
   addNodes({
     id: `${type}-${Date.now()}`,
     type: config.type,
     position,
     data: {
-    ...config.data,
-    inputs: config.handles.inputs.map(h => h.id),
-    outputs: config.handles.outputs.map(h => h.id),
-    style: {
+      ...config.data,
+      inputs: config.handles.inputs.map(h => h.id),
+      outputs: config.handles.outputs.map(h => h.id),
+      floor: 1, // 默认楼层
+      style: {
         background: '#fff',
         padding: '5px',
         borderRadius: '20px',
-    },
+      },
     },
     draggable: true,
     connectable: true,
   })
-  //map 是 JavaScript 数组的一个方法，用来遍历数组并返回一个新数组 (h=> h.id) 是一个箭头函数，表示将每个 handle 的 id 提取出来
 }
 
-// 连接事件处理
-// 当用户在 Vue Flow 画布上连接两个节点时，Vue Flow 会触发 connect 事件，onConnect 函数就会被调用，
-// 参数是连接的信息（如起点、终点等）。
+// 连接处理函数
 const onConnect = (params) => {
   const result = validateConnection(params, edges.value, nodes.value)
   if (!result.valid) {
@@ -389,6 +470,18 @@ const onConnect = (params) => {
 }
 
 
+// 自定义节点拖拽开始
+const onCustomDragStart = (event, nodeConfig) => {
+  console.log('🚀 自定义节点拖拽开始:', nodeConfig.name)
+  event.dataTransfer.effectAllowed = 'move'
+  // 存储完整的节点配置
+  event.dataTransfer.setData('application/node-type', nodeConfig.type)
+  event.dataTransfer.setData('application/node-config', JSON.stringify(nodeConfig))
+  event.dataTransfer.setData('text/plain', `拖动自定义模块: ${nodeConfig.name}`)
+  event.target.style.opacity = '0.5'
+}
+
+
 // 拖拽开始
 const onDragStart = (event, type) => {
   // 设置拖拽开始时，拖拽事件中的节点类型，键名为 'application/node-type'，值为节点类型
@@ -423,14 +516,11 @@ onMounted(async () => {
     nodeD.value.addEventListener('dragstart', (e) => onDragStart(e, 'D'))
     nodeD.value.addEventListener('dragend', onDragEnd)
   }
+  // 加载自定义模块
+  customNodes.value = loadCustomModules()
+  registerCustomNodeTypes()
 })
-// 导出和导入处理
-// const handleExport = () => {
-//   exportFlow(vueFlowInstance.value, (message) => {
-//     errorMessage.value = message
-//     errorKey.value += 1
-//   })
-// }
+
 
 // 新的导出函数
 const handleExport = (format = 'json') => {
@@ -514,6 +604,51 @@ const nodeColor = (node) => {
   }
 };
 
+// 添加自定义节点到画布
+const addCustomNode = (nodeConfig, position) => {
+  const inputCount = nodeConfig.inputs
+  const outputCount = nodeConfig.outputs
+  
+  // 创建输入输出连接点
+  const inputs = Array.from({ length: inputCount }, (_, i) => ({
+    position: 'left',
+    id: `input-${i}`
+  }))
+  
+  const outputs = Array.from({ length: outputCount }, (_, i) => ({
+    position: 'right',
+    id: `output-${i}`
+  }))
+
+  console.log(`添加自定义节点id: ${nodeConfig.type}-${Date.now()}`)
+  console.log(`添加自定义节点type: ${nodeConfig.type}`)
+
+
+
+  // 添加节点
+  addNodes({
+    id: `${nodeConfig.type}-${Date.now()}`,
+    type: nodeConfig.type, // 使用自定义节点类型
+    position,
+    data: {
+      label: nodeConfig.name,
+      inputs: inputs.map(h => h.id),
+      outputs: outputs.map(h => h.id),
+      nodeConfig: nodeConfig, // 传递完整配置
+      floor: 1, // 默认楼层
+      style: {
+        background: '#ff0',
+        padding: '5px',
+        borderRadius: '20px',
+      },
+    },
+    draggable: true,
+    connectable: true,
+  })
+  
+  console.log(`✅ 添加自定义节点: ${nodeConfig.name}`)
+}
+
 </script>
 
 <style>
@@ -571,6 +706,23 @@ html, body, #app {
   box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
 }
 
+.custom-node {
+  background-color: rgba(31, 162, 255, 0.1);
+  border: 1px solid rgba(31, 162, 255, 0.5);
+}
+
+.custom-node .node-icon svg {
+  color: #1fa2ff;
+}
+
+.custom-node:hover {
+  background-color: rgba(31, 162, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(31, 162, 255, 0.2);
+}
+
+
+
 .sidebar {
   user-select: none;        
   width: 360px;
@@ -582,6 +734,9 @@ html, body, #app {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  /* 优化布局 */
+  overflow-y: auto;
+  max-height: 100vh;
 }
 
 .sidebar-title {
