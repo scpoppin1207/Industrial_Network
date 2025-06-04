@@ -103,7 +103,9 @@
           <button class="export-btn" @click="handleExport('sys')">导出 SYS</button>
           <input type="file" accept=".json" @change="handleImport" ref="fileInputRef" style="display: none;" />
           <button class="export-btn" @click="fileInputRef.click()">导入 JSON</button>
+          <button class="export-btn" @click="goToBlock">前往模块设计</button>
         </div>
+
       </div>
 
     <WelcomeDialog v-model="dialogVisible" @flow-generated="handleFlowGenerated" />
@@ -117,12 +119,19 @@ const entry = ref('') // '' 表示未选择，'custom' 或 'system'
 import { watch,ref, onMounted , nextTick, markRaw} from 'vue'
 import { VueFlow, addEdge, useVueFlow, MarkerType, applyNodeChanges, applyEdgeChanges } from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
+import { useRouter } from 'vue-router'
 import '@vue-flow/minimap/dist/style.css'
 import { validateConnection } from '../utils/connectionRules' // 连接规则函数
 import { exportFlow, importFlow } from '../utils/importExport'
 import ErrorOverlay from './ErrorOverlay.vue' // 错误覆盖组件
 import WelcomeDialog from './Dialog.vue'
 const dialogVisible = ref(true)
+
+const router = useRouter()
+
+const goToBlock = () => {
+  router.push('../block')
+}
 
 // 导入节点类型
 import NodeA from './NodeA.vue'
@@ -905,7 +914,7 @@ html, body, #app {
     border-left: none;
     border-top: 1px solid rgba(255, 255, 255, 0.12);
   }
-  
+
   .export-buttons {
     flex-direction: row;
     flex-wrap: wrap;
