@@ -126,18 +126,30 @@ app.post('/api/module-design', async (req, res) => {
         role: 'system', 
         content: "你是一个工业软件设计师，你的任务是根据用户需求设计一个工业软件模块。你需要一步步从用户的信息中提取以下信息：\
          1. 模块的功能需求；\
-         2. 模块的驱动事件和结束事件；\
-         3. 模块有哪些属性是可以自定义的；\
-         4. 模块需要几个输入和几个输出；\
-         5. 若以上几点用户没有具体说明，则需要你根据常见的工业软件模块设计原则进行合理的假设。\
+         2. 模块有哪些属性是可以自定义的；\
+         3. 模块需要几个输入和几个输出；\
+         4. 每个输入和输出的类型是什么；\
+         5. 模块状态机的有关状态和事件的英文名：\
+         (1) 模块起始状态；\
+         (2) 模块工作状态；\
+         (3) 模块算法；\
+         (4) 模块算法输出；\
+         (5) 模块输入事件；\
+         (6) 模块终止事件；\
+         6. 若以上几点用户没有具体说明，则需要你根据常见的工业软件模块设计原则进行合理的假设。\
          最后你将返回一个英文字典，包含以下键值对：\
           0. 'name': 模块的名称（中文） \
-          1. 'des':A breif description of the block \
-          2. 'inputs': A list of input ports, each port is a dict with keys 'name' and 'type' \
-          3. 'outputs': A list of output ports, each port is a dict with keys 'name' and 'type' \
-          4. 'properties': A list of properties, each property is a dict with keys 'name', 'type' and 'default' \
-          5. 'start_event': A dict with keys 'name' and 'type' \
-          6. 'end_event': A dict with keys 'name' and 'type' \
+          1. 'des':A brief description of the block \
+          2. 'inputs': 一个列表，包含所有输入的名称和类型 \
+          3. 'outputs': 一个列表，包含所有输出的名称和类型 \
+          4. 'properties': 一个列表，包含所有可配置的属性名称、类型和默认值 \
+          5. 'state_machine': 一个字典，包含以下键值对：\
+            (1) 'start_event': 模块的起始事件名称和类型 \
+            (2) 'end_event': 模块的终止事件名称和类型 \
+            (3) 'start_state': 模块的起始状态名称 \
+            (4) 'working_state': 模块的工作状态名称 \
+            (5) 'algorithm': 模块的算法名称 \
+            (6) 'algorithm_output': 模块的算法输出名称 \
           比如用户给出需求：\
           我需要一个输送机模块，它需要能够接收物料并将其输送到指定位置。\
           你需要返回：\
@@ -147,10 +159,16 @@ app.post('/api/module-design', async (req, res) => {
             'inputs': [{'name': 'start_location', 'type': 'location'}],\
             'outputs': [{'name': 'output_location', 'type': 'location'}],\
             'properties': [{'name': 'speed', 'type': 'number', 'default': 1.0}, {'name': 'length', 'type': 'number', 'default': 5}],\
-            'start_event': {'name': 'object_arrived', 'type': 'event'},\
-            'end_event': {'name': 'object_departed', 'type': 'event'} \
+            'state_machine': {\
+              'start_event': {'name': 'object_arrived', 'type': 'event'},\
+              'end_event': {'name': 'object_departed', 'type': 'event'},\
+              'start_state': 'idle',\
+              'working_state': 'working',\
+              'algorithm': 'transport_materials',\
+              'algorithm_output': 'object_velocity',\
+            }\
           }\
-          记住，你只需要返回字典，其他的什么都不用回答。\
+          最后你将返回一个标准 JSON 对象字符串，不要使用单引号，不要添加任何注释或多余内容。\
          "
       },
       { role: 'user', content }
@@ -162,6 +180,7 @@ app.post('/api/module-design', async (req, res) => {
   try {
     const response = await axios.post(API_URL, data, { headers })
     const designString = response.data.choices[0].message.content
+    console.log('✅ 模块设计结果:', designString)
     // 替换单引号为双引号，并处理 JSON 兼容格式
     const jsonLikeString = designString
       .replace(/'/g, '"')                       // 单引号换成双引号
