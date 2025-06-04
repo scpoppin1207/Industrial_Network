@@ -7,9 +7,9 @@
     <div class="buttons-container">
       <div 
         class="entry-card" 
-        @click="select('custom')"
-        :class="{'hover-effect': hoverState === 'custom'}"
-        @mouseenter="hoverState = 'custom'"
+        @click="select('block')"
+        :class="{'hover-effect': hoverState === 'block'}"
+        @mouseenter="hoverState = 'block'"
         @mouseleave="hoverState = null"
       >
         <div class="icon-container">
@@ -20,13 +20,12 @@
             </svg>
           </div>
         </div>
-        <h3>自定义模块</h3>
-        <p>创建并配置个性化功能</p>
+        <h3>模块设计</h3>
+        <p>创建并配置个性化功能块</p>
         <div class="enter-btn">开始使用</div>
       </div>
-      
-      <div 
-        class="entry-card" 
+
+      <div class="entry-card"
         @click="select('system')"
         :class="{'hover-effect': hoverState === 'system'}"
         @mouseenter="hoverState = 'system'"
@@ -57,7 +56,7 @@ const hoverState = ref(null)
 
 function select(type) {
   if (type === 'system') router.push('/system')
-  else if (type === 'custom') router.push('/custom')
+  else if (type === 'block') router.push('/block')
 }
 </script>
 
