@@ -1,16 +1,20 @@
 <script setup>
-import { Handle, Position } from '@vue-flow/core'
+import { Handle, Position} from '@vue-flow/core'
+import { computed } from 'vue'
 import { ResizeRotateNode } from '@vue-flow/resize-rotate-node'
 import my_transfer from '@/assets/transfer.png'
-// 获取 props
 const props = defineProps(['id', 'data', 'selected', 'resize', 'rotate', 'setRef'])
-
-const getFloorColor = (floor) => {
-  const maxFloor = 10
-  const level = Math.min(floor || 0, maxFloor) // 控制最大值
-  const intensity = 255 - Math.floor((level / maxFloor) * 200) // 范围控制在[55,255]
-  return `rgb(${intensity}, ${intensity}, ${intensity})` // 灰度色
+const calculateColorfromFloor = (floor) => {
+  // 根据楼层计算颜色,随着楼层升高从白色到灰色渐变
+  const maxFloor = 10; // 假设最大楼层为10
+  const ratio = Math.min(floor / maxFloor, 1); // 确保比例在0到1之间
+  const r = Math.floor(255 * (1 - ratio)); // 红色从255降到0
+  const g = Math.floor(255 * (1 - ratio)); // 绿色从255降到0
+  const b = Math.floor(255 * (1 - ratio)); // 蓝色从255降到0
+  return `rgb(${r}, ${g}, ${b})`; // 返回RGB颜色字符串
 }
+
+
 </script>
 
 <template>
@@ -19,7 +23,7 @@ const getFloorColor = (floor) => {
     :data="props.data"
   >
    <div class="node-wrapper" >
-    <div class="custom-node a" :style="{ backgroundColor: getFloorColor(props.data.floor) }">
+    <div class="custom-node a" :style="{ backgroundColor: calculateColorfromFloor(props.data.floor) }">
       <div class="node-title">{{ "输送机" }}</div>
       <div class="floor-display">楼层: {{ props.data.floor }}</div>
       <div class="image-container">

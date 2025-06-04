@@ -131,6 +131,7 @@ app.post('/api/module-design', async (req, res) => {
          4. 模块需要几个输入和几个输出；\
          5. 若以上几点用户没有具体说明，则需要你根据常见的工业软件模块设计原则进行合理的假设。\
          最后你将返回一个英文字典，包含以下键值对：\
+          0. 'name': 模块的名称（中文） \
           1. 'des':A breif description of the block \
           2. 'inputs': A list of input ports, each port is a dict with keys 'name' and 'type' \
           3. 'outputs': A list of output ports, each port is a dict with keys 'name' and 'type' \
@@ -141,7 +142,7 @@ app.post('/api/module-design', async (req, res) => {
           我需要一个输送机模块，它需要能够接收物料并将其输送到指定位置。\
           你需要返回：\
           { \
-            'name': 'conveyor',\
+            'name': '输送机',\
             'des': 'A conveyor module that transports materials to a specified location.',\
             'inputs': [{'name': 'start_location', 'type': 'location'}],\
             'outputs': [{'name': 'output_location', 'type': 'location'}],\
