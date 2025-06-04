@@ -39,6 +39,7 @@ function runPythonScript(scriptName, args, callback) {
   })
 }
 
+// 系统设计对话
 app.post('/api/dialog', async (req, res) => {
   const { content } = req.body
 
@@ -108,6 +109,80 @@ app.post('/api/dialog', async (req, res) => {
     res.status(500).json({ reply: 'LLM请求失败' })
   }
 })
+
+// 模块设计对话
+app.post('/api/module-design', async (req, res) => {
+  const { content } = req.body
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${API_KEY}`,
+  }
+
+  const data = {
+    model: 'Qwen2.5-72B-32K',
+    messages: [
+      { 
+        role: 'system', 
+        content: "你是一个工业软件设计师，你的任务是根据用户需求设计一个工业软件模块。你需要一步步从用户的信息中提取以下信息：\
+         1. 模块的功能需求；\
+         2. 模块的驱动事件和结束事件；\
+         3. 模块有哪些属性是可以自定义的；\
+         4. 模块需要几个输入和几个输出；\
+         5. 若以上几点用户没有具体说明，则需要你根据常见的工业软件模块设计原则进行合理的假设。\
+         最后你将返回一个英文字典，包含以下键值对：\
+          1. 'des':A breif description of the block \
+          2. 'inputs': A list of input ports, each port is a dict with keys 'name' and 'type' \
+          3. 'outputs': A list of output ports, each port is a dict with keys 'name' and 'type' \
+          4. 'properties': A list of properties, each property is a dict with keys 'name', 'type' and 'default' \
+          5. 'start_event': A dict with keys 'name' and 'type' \
+          6. 'end_event': A dict with keys 'name' and 'type' \
+          比如用户给出需求：\
+          我需要一个输送机模块，它需要能够接收物料并将其输送到指定位置。\
+          你需要返回：\
+          { \
+            'name': 'conveyor',\
+            'des': 'A conveyor module that transports materials to a specified location.',\
+            'inputs': [{'name': 'start_location', 'type': 'location'}],\
+            'outputs': [{'name': 'output_location', 'type': 'location'}],\
+            'properties': [{'name': 'speed', 'type': 'number', 'default': 1.0}, {'name': 'length', 'type': 'number', 'default': 5}],\
+            'start_event': {'name': 'object_arrived', 'type': 'event'},\
+            'end_event': {'name': 'object_departed', 'type': 'event'} \
+          }\
+          记住，你只需要返回字典，其他的什么都不用回答。\
+         "
+      },
+      { role: 'user', content }
+    ],
+    stream: false,
+    temperature: 0.3 
+  }
+
+  try {
+    const response = await axios.post(API_URL, data, { headers })
+    const designString = response.data.choices[0].message.content
+    // 替换单引号为双引号，并处理 JSON 兼容格式
+    const jsonLikeString = designString
+      .replace(/'/g, '"')                       // 单引号换成双引号
+      .replace(/None/g, 'null')                 // Python None 转为 null（可选）
+      .replace(/True/g, 'true')                 // 可选
+      .replace(/False/g, 'false')               // 可选
+
+    let design
+    try {
+      design = JSON.parse(jsonLikeString)
+    } catch (e) {
+      console.error('解析设计结果失败:', e)
+      return res.status(500).json({ error: '模块设计返回格式非法' })
+    }
+
+    res.json({ design })
+  } catch (error) {
+    console.error('模块设计请求失败:', error.message)
+    res.status(500).json({ error: '模块设计请求失败' })
+  }
+})
+
 
 app.listen(PORT, () => {
   console.log(`✅ 后端服务器运行中：http://localhost:${PORT}`)
