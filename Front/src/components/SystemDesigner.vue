@@ -194,11 +194,10 @@ const loadCustomModules = () => {
 }
 
 const registerCustomNodeTypes = () => {
-  console.log(`尝试注册模块库的自定义节点类型...`)
   customNodes.value.forEach(node => {
-    if (!nodeTypes[node.type]) {
-      nodeTypes[node.type] = markRaw(CustomNode)
-      console.log(`成功注册自定义节点类型: ${node.type}`)
+    if (!nodeTypes[node.name]) {
+      nodeTypes[node.name] = markRaw(CustomNode)
+      console.log(`成功注册自定义节点类型: ${node.name}`)
     }
   })
 }
@@ -637,7 +636,7 @@ const addCustomNode = (nodeConfig, position) => {
       nodeConfig: nodeConfig, // 传递完整配置
       floor: 1, // 默认楼层
       style: {
-        background: '#ff0',
+        background: '#fff',
         padding: '5px',
         borderRadius: '20px',
       },

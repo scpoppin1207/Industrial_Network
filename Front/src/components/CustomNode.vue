@@ -1,4 +1,9 @@
 <template>
+  <ResizeRotateNode
+    :id="props.id"
+    :data="props.data"
+  >
+  <div class="node-wrapper">
   <div class="custom-node" :style="style">
     <!-- 节点标题区域 -->
     <div class="node-header">
@@ -35,24 +40,21 @@
     <!-- 模块信息区域 -->
     <div class="info-section">
       <div class="module-description">
-        <div v-if="nodeConfig.des" class="description-content">
-          {{ nodeConfig.des }}
-        </div>
-        <div v-else class="no-description">
+
+        <div class="no-description">
           自定义模块
         </div>
       </div>
-      <div class="connector-info">
-        <span>{{ inputs.length }} 输入</span>
-        <span>{{ outputs.length }} 输出</span>
-      </div>
     </div>
   </div>
+  </div>
+  </ResizeRotateNode>
 </template>
 
 <script setup>
 import { Handle, Position } from '@vue-flow/core'
 import { computed } from 'vue'
+import { ResizeRotateNode } from '@vue-flow/resize-rotate-node'
 
 const props = defineProps({
   id: String,
@@ -61,6 +63,8 @@ const props = defineProps({
   data: Object,
   nodeConfig: Object
 })
+
+console.log(props.nodeConfig)
 
 // 计算输入输出点的位置
 const inputPosition = (index, total) => {
@@ -106,18 +110,39 @@ const outputs = computed(() => {
 </script>
 
 <style scoped>
+
+:deep([data-moveable-id]) {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: stretch !important; /* 垂直拉伸 */
+  justify-content: stretch !important; /* 水平拉伸 */
+}
+
+.node-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  box-sizing: border-box;
+  flex: 1 1 auto;
+}
+
 .custom-node {
+  display: flex;
+  flex-direction: column;
   position: relative;
   font-family: 'Arial', sans-serif;
   font-size: 12px;
   display: flex;
   flex-direction: column;
-  width: 160px;
-  height: 140px;
+  width: 100%;
+  height: 100%;
   border-radius: 8px;
   overflow: hidden;
   box-sizing: border-box;
   transition: all 0.2s ease;
+  min-width: 50px; /* 最小宽度 */
+  min-height: 50px; /* 最小高度 */
 }
 
 /* 节点顶部标题栏 */
@@ -174,28 +199,13 @@ const outputs = computed(() => {
   max-height: 70px;
 }
 
-.description-content {
-  display: -webkit-box;
-  -webkit-line-clamp: 3; /* 限制3行 */
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+
 
 .no-description {
   font-style: italic;
   color: #aaa;
 }
 
-/* 连接点信息 */
-.connector-info {
-  display: flex;
-  justify-content: space-between;
-  padding: 4px 8px 0;
-  font-size: 10px;
-  color: #666;
-  margin-top: auto;
-}
 
 /* 连接点样式 */
 .custom-handle {
