@@ -1,6 +1,5 @@
 <script setup>
 import { Handle, Position} from '@vue-flow/core'
-import { computed } from 'vue'
 import { ResizeRotateNode } from '@vue-flow/resize-rotate-node'
 import my_transfer from '@/assets/transfer.png'
 const props = defineProps(['id', 'data', 'selected', 'resize', 'rotate', 'setRef'])
