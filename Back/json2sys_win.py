@@ -15,41 +15,41 @@ def convert_json_to_xml(json_data):
         "node-C": "lifter",
         "node-D": "shelf"
     }
-    
+
     # 端口类型映射（事件端口）
     event_port_map = {
         # 输送机 (A)
-        "input-a": "RCV",
-        "output-a": "SND",
+        "input-a": "ARRIVAL",
+        "output-a": "DEPARTURE",
         # 移栽机 (B)
-        "input-b": "RCV",
-        "output-b1": "B1",
-        "output-b2": "B2",
-        "output-b3": "B3",
+        "input-b": "ARRIVAL",
+        "output-b1": "DEPARTURE1",
+        "output-b2": "DEPARTURE2",
+        "output-b3": "DEPARTURE3",
         # 提升机 (C)
-        "input-c": "IN",
-        "output-c": "OUT",
+        "input-c": "ARRIVAL",
+        "output-c": "DEPARTURE",
         # 货架 (D)
-        "input-d": "IN",
-        "output-d": "OUT"
+        "input-d": "ARRIVAL",
+        "output-d": "DEPARTURE"
     }
-    
+
     # 端口类型映射（数据端口）
     data_port_map = {
         # 输送机 (A)
-        "input-a": "QI",
-        "output-a": "QO",
+        "input-a": "INPUT",
+        "output-a": "OUTPUT",
         # 移栽机 (B)
-        "input-b": "QI",
-        "output-b1": "QO1",
-        "output-b2": "QO2",
-        "output-b3": "QO3",
+        "input-b": "INPUT",
+        "output-b1": "OUTPUT1",
+        "output-b2": "OUTPUT2",
+        "output-b3": "OUTPUT3",
         # 提升机 (C)
-        "input-c": "QI",
-        "output-c": "QO",
+        "input-c": "INPUT",
+        "output-c": "OUTPUT",
         # 货架 (D)
-        "input-d": "QI",
-        "output-d": "QO"
+        "input-d": "INPUT",
+        "output-d": "OUTPUT"
     }
     
     # 统计每种类型的模块数量

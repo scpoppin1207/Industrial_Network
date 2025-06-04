@@ -3,51 +3,52 @@
     :id="props.id"
     :data="props.data"
   >
-  <div class="node-wrapper">
-  <div class="custom-node" :style="style">
-    <!-- 节点标题区域 -->
-    <div class="node-header">
-      <div class="node-type-badge">自定义</div>
-      <div class="node-title">{{ data.label }}</div>
-    </div>
-    
-    <!-- 输入点 -->
-    <div class="inputs">
-      <Handle 
-        v-for="(input, index) in inputs" 
-        :key="input.id"
-        :id="input.id"
-        type="target"
-        :position="Position.Left"
-        :style="{ top: inputPosition(index, inputs.length) }"
-        :class="['custom-handle', 'input-handle']"
-      />
-    </div>
-    
-    <!-- 输出点 -->
-    <div class="outputs">
-      <Handle 
-        v-for="(output, index) in outputs" 
-        :key="output.id"
-        :id="output.id"
-        type="source"
-        :position="Position.Right"
-        :style="{ top: outputPosition(index, outputs.length) }"
-        :class="['custom-handle', 'output-handle']"
-      />
-    </div>
-    
-    <!-- 模块信息区域 -->
-    <div class="info-section">
-      <div class="module-description">
+    <!-- 修改绑定 -->
+    <div class="node-wrapper" :data-node-id="props.id">
+      <div class="custom-node" :style="style">
+        <!-- 节点标题区域 -->
+        <div class="node-header">
+          <div class="node-type-badge">自定义</div>
+          <div class="node-title">{{ data.label }}</div>
+        </div>
+        <!-- 新增属性展示 -->
+        <div class="property-display">速度: {{ data.speed }}</div>
+        <div class="property-display">长度: {{ data.length }}</div>
+        <!-- 输入点 -->
+        <div class="inputs">
+          <Handle 
+            v-for="(input, index) in inputs" 
+            :key="input.id"
+            :id="input.id"
+            type="target"
+            :position="Position.Left"
+            :style="{ top: inputPosition(index, inputs.length) }"
+            :class="['custom-handle', 'input-handle']"
+          />
+        </div>
+        <!-- 输出点 -->
+        <div class="outputs">
+          <Handle 
+            v-for="(output, index) in outputs" 
+            :key="output.id"
+            :id="output.id"
+            type="source"
+            :position="Position.Right"
+            :style="{ top: outputPosition(index, outputs.length) }"
+            :class="['custom-handle', 'output-handle']"
+          />
+        </div>
+        <!-- 模块信息区域 -->
+        <div class="info-section">
+          <div class="module-description">
 
-        <div class="no-description">
-          自定义模块
+            <div class="no-description">
+              自定义模块
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-  </div>
   </ResizeRotateNode>
 </template>
 
@@ -172,6 +173,18 @@ const outputs = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   flex-grow: 1;
+}
+
+/* 新增属性展示样式 */
+.property-display {
+  font-size: 11px;
+  color: #333;
+  margin: 4px 0;
+  padding: 0 8px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
 }
 
 /* 信息区域 */
