@@ -211,11 +211,19 @@ def convert_json_to_xml(json_data):
 if __name__ == "__main__":
     import sys
     
-    # 解析 JSON 字符串
-    json_data = json.loads(sys.argv[1])
-    
-    # 转换为 XML
-    xml_output = convert_json_to_xml(json_data)
-    
-    # 直接输出 XML
-    print(xml_output)
+    input_file = sys.argv[1]
+
+    try:
+        # 从文件读取JSON数据
+        with open(input_file, 'r') as f:
+            flow_data = json.load(f)
+        
+        # 原有转换逻辑...
+        xml_output = convert_json_to_xml(flow_data)
+        
+        # 输出结果
+        print(xml_output)
+        
+    except Exception as e:
+        print(f"Error: {str(e)}", file=sys.stderr)
+        sys.exit(1)

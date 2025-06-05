@@ -218,7 +218,8 @@ app.post('/api/convert-to-sys', async (req, res) => {
   
   try {
     // 调用 Python 转换脚本
-    const xmlOutput = await runPythonConversion(flowData);
+    // const xmlOutput = await runPythonConversion(flowData);
+    const xmlOutput = await JOSN2SYS(flowData);
     
     // 设置正确的响应头
     res.setHeader('Content-Type', 'application/xml');
@@ -233,28 +234,86 @@ app.post('/api/convert-to-sys', async (req, res) => {
 });
 
 // 封装 Python 转换函数：导出SYS
-function runPythonConversion(flowData) {
+// function runPythonConversion(flowData) {
+//   return new Promise((resolve, reject) => {
+//     const pythonProcess = spawn('python', ['json2sys.py', JSON.stringify(flowData)]);
+    
+//     let output = '';
+//     let errorOutput = '';
+    
+//     pythonProcess.stdout.on('data', (data) => {
+//       output += data.toString();
+//     });
+    
+//     pythonProcess.stderr.on('data', (data) => {
+//       errorOutput += data.toString();
+//     });
+    
+//     pythonProcess.on('close', (code) => {
+//       if (code !== 0) {
+//         console.error(`Python脚本执行失败: ${errorOutput}`);
+//         reject(new Error(`Python脚本执行失败，退出代码: ${code}`));
+//       } else {
+//         resolve(output);
+//       }
+//     });
+//   });
+// }
+
+// 封装 Python 转换函数，windows特供
+// 修改后的 runPythonConversion 函数
+async function JOSN2SYS(flowData) {
   return new Promise((resolve, reject) => {
-    const pythonProcess = spawn('python', ['json2sys.py', JSON.stringify(flowData)]);
+    // 创建临时文件
+    const tempFilePath = path.join(__dirname, 'temp', `flowData_${Date.now()}.json`);
     
-    let output = '';
-    let errorOutput = '';
-    
-    pythonProcess.stdout.on('data', (data) => {
-      output += data.toString();
-    });
-    
-    pythonProcess.stderr.on('data', (data) => {
-      errorOutput += data.toString();
-    });
-    
-    pythonProcess.on('close', (code) => {
-      if (code !== 0) {
-        console.error(`Python脚本执行失败: ${errorOutput}`);
-        reject(new Error(`Python脚本执行失败，退出代码: ${code}`));
-      } else {
-        resolve(output);
+    // 确保临时目录存在
+    const tempDir = path.dirname(tempFilePath);
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    // 将数据写入临时文件
+    fs.writeFile(tempFilePath, JSON.stringify(flowData), (writeError) => {
+      if (writeError) {
+        return reject(writeError);
       }
+
+      // 设置Python环境变量，强制使用UTF-8编码
+      const env = {
+        ...process.env,
+        PYTHONIOENCODING: 'utf-8',
+        PYTHONUTF8: '1'
+      };
+      // 传递文件路径而不是数据内容
+      const pythonProcess = spawn('python', ['json2sys.py', tempFilePath], {
+        env: env,
+        encoding: 'utf-8' // 显示指定编码
+      });
+      
+      let output = '';
+      let errorOutput = '';
+      
+      pythonProcess.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+      
+      pythonProcess.stderr.on('data', (data) => {
+        errorOutput += data.toString();
+      });
+      
+      pythonProcess.on('close', (code) => {
+        // 清理临时文件
+        fs.unlink(tempFilePath, (unlinkError) => {
+          if (unlinkError) console.error('临时文件删除失败:', unlinkError);
+        });
+        
+        if (code !== 0) {
+          reject(new Error(`Python脚本执行失败，退出代码: ${code}\n${errorOutput}`));
+        } else {
+          resolve(output);
+        }
+      });
     });
   });
 }
