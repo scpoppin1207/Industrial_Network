@@ -180,7 +180,7 @@ app.post('/api/module-design', async (req, res) => {
   try {
     const response = await axios.post(API_URL, data, { headers })
     const designString = response.data.choices[0].message.content
-    console.log('✅ 模块设计结果:', designString)
+    // console.log('✅ 模块设计结果:', designString)
     // 替换单引号为双引号，并处理 JSON 兼容格式
     const jsonLikeString = designString
       .replace(/'/g, '"')                       // 单引号换成双引号
@@ -195,6 +195,10 @@ app.post('/api/module-design', async (req, res) => {
       console.error('解析设计结果失败:', e)
       return res.status(500).json({ error: '模块设计返回格式非法' })
     }
+
+    // JSON转FBT
+    const xmlfbt = await JSON2FBT(design)
+    console.log('✅ 功能块描述文件:', xmlfbt)
 
     res.json({ design })
   } catch (error) {
@@ -229,7 +233,7 @@ app.post('/api/convert-to-sys', async (req, res) => {
   }
 });
 
-// 封装 Python 转换函数
+// 封装 Python 转换函数：导出SYS
 function runPythonConversion(flowData) {
   return new Promise((resolve, reject) => {
     const pythonProcess = spawn('python', ['json2sys.py', JSON.stringify(flowData)]);
@@ -252,6 +256,63 @@ function runPythonConversion(flowData) {
       } else {
         resolve(output);
       }
+    });
+  });
+}
+
+// 封装Python函数：生成功能块描述文件
+async function JSON2FBT(Data) {
+  return new Promise((resolve, reject) => {
+    // 创建临时文件
+    const tempFilePath = path.join(__dirname, 'temp', `fbt_${Date.now()}.json`);
+    
+    // 确保临时目录存在
+    const tempDir = path.dirname(tempFilePath);
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    // 将数据写入临时文件
+    fs.writeFile(tempFilePath, JSON.stringify(Data), (writeError) => {
+      if (writeError) {
+        return reject(writeError);
+      }
+      
+      // 设置Python环境变量，强制使用UTF-8编码
+      const env = {
+        ...process.env,
+        PYTHONIOENCODING: 'utf-8',
+        PYTHONUTF8: '1'
+      };
+      // 传递文件路径而不是数据内容
+      const pythonProcess = spawn('python', ['json2fbt.py', tempFilePath], {
+        env: env,
+        encoding: 'utf-8' // 显示指定编码
+      });
+      
+      let output = '';
+      let errorOutput = '';
+      
+      pythonProcess.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+      
+      pythonProcess.stderr.on('data', (data) => {
+        errorOutput += data.toString();
+      });
+      
+      pythonProcess.on('close', (code) => {
+        // 清理临时文件
+        fs.unlink(tempFilePath, (unlinkError) => {
+          if (unlinkError) console.error('临时文件删除失败:', unlinkError);
+        });
+        
+        if (code !== 0) {
+          reject(new Error(`Python脚本执行失败，退出代码: ${code}\n${errorOutput}`));
+        } else {
+          resolve(output);
+        }
+      });
     });
   });
 }
