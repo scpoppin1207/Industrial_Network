@@ -1,9 +1,11 @@
 <script setup>
 import { Handle } from '@vue-flow/core'
 import { ResizeRotateNode } from '@vue-flow/resize-rotate-node'
+import { computed } from 'vue'
 import lifter from '@/assets/lifter.png'
 
 const props = defineProps(['id', 'data', 'selected', 'resize', 'rotate', 'setRef'])
+
 const calculateColorfromFloor = (floor) => {
   // 根据楼层计算颜色,随着楼层升高从白色到灰色渐变
   const maxFloor = 10; // 假设最大楼层为10
@@ -13,6 +15,21 @@ const calculateColorfromFloor = (floor) => {
   const b = Math.floor(255 * (1 - ratio)); // 蓝色从255降到0
   return `rgb(${r}, ${g}, ${b})`; // 返回RGB颜色字符串
 }
+
+// Add computed nodeConfig filtering allowed keys.
+const nodeConfig = computed(() => {
+	const allowed = ['speed', 'length', 'payload', 'height', 'capacity']
+	const cfg = {}
+	allowed.forEach(key => {
+		if (props.data[key] !== undefined) {
+			cfg[key] = props.data[key]
+		}
+	})
+	return cfg
+})
+
+// Expose nodeConfig.
+defineExpose({ nodeConfig })
 
 </script>
 
@@ -31,7 +48,7 @@ const calculateColorfromFloor = (floor) => {
         <div class="floor-display">楼层: {{ props.data.floor }}</div>
         <!-- 新增属性展示 -->
         <div class="property-display">速度: {{ props.data.speed }}</div>
-        <div class="property-display">长度: {{ props.data.length }}</div>
+        <div class="property-display">高度: {{ props.data.height }}</div>
         <div class="image-container">
           <img :src="lifter" alt="模块图示" class="node-image" />
         </div>

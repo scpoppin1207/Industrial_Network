@@ -198,9 +198,9 @@ app.post('/api/module-design', async (req, res) => {
 
     // JSON转FBT
     const xmlfbt = await JSON2FBT(design)
-    console.log('✅ 功能块描述文件:', xmlfbt)
+    console.log('✅ 功能块描述文件已生成') // Log changed for brevity, xmlfbt can be long
 
-    res.json({ design })
+    res.json({ design, xmlfbt }) // Return both design (JSON) and xmlfbt (XML string)
   } catch (error) {
     console.error('模块设计请求失败:', error.message)
     res.status(500).json({ error: '模块设计请求失败' })
@@ -211,7 +211,6 @@ app.post('/api/module-design', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ 后端服务器运行中：http://localhost:${PORT}`)
 })
-
 
 // 添加新的路由处理 SYS 转换
 app.post('/api/convert-to-sys', async (req, res) => {

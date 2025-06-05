@@ -139,6 +139,16 @@
                   </svg>
                   查看
                 </button>
+                <button 
+                  v-if="module.xmlfbt" 
+                  @click="downloadFBT(module)" 
+                  class="action-button download-fbt"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                  </svg>
+                  下载FBT
+                </button>
                 <button @click="deleteModule(index)" class="action-button delete">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16">
                     <path fill="#ff6b6b" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
@@ -162,7 +172,8 @@ import { useRouter } from 'vue-router'
 // 模块设计相关状态
 const userInput = ref('')
 const loading = ref(false)
-const designResult = ref('')
+const designResult = ref('') // Stores the JSON design
+const generatedXmlFbt = ref('') // Stores the FBT XML string for the current design
 const error = ref('')
 
 // 模块库相关状态
@@ -194,6 +205,7 @@ const submitDesignRequest = async () => {
   loading.value = true
   error.value = ''
   designResult.value = ''
+  generatedXmlFbt.value = '' // Reset FBT content
   
   try {
     const response = await fetch('/api/module-design', {
@@ -213,7 +225,10 @@ const submitDesignRequest = async () => {
     const data = await response.json()
     console.log('服务器返回数据:', data)
    
-    designResult.value = data.design
+    designResult.value = data.design // JSON design
+    if (data.xmlfbt) {
+      generatedXmlFbt.value = data.xmlfbt // FBT XML string
+    }
   } catch (err) {
     error.value = `请求失败: ${err.message}`
     console.error('模块设计请求失败:', err)
@@ -229,7 +244,8 @@ const saveModule = () => {
   const newModule = {
     id: Date.now(),
     name: designResult.value.name,
-    content: designResult.value,
+    content: designResult.value, // JSON content
+    xmlfbt: generatedXmlFbt.value, // FBT XML string
     timestamp: new Date().toLocaleString(),
     userInput: userInput.value
   }
@@ -240,6 +256,7 @@ const saveModule = () => {
   // 清空当前输入和结果
   userInput.value = ''
   designResult.value = ''
+  generatedXmlFbt.value = '' // Clear FBT content as well
   error.value = ''
 }
 
@@ -257,7 +274,8 @@ const deleteModule = (index) => {
 // 查看模块详情
 const viewModule = (module) => {
   userInput.value = module.userInput
-  designResult.value = module.content
+  designResult.value = module.content // module.content is the JSON
+  generatedXmlFbt.value = module.xmlfbt || '' // Populate FBT for the viewed module
   // 滚动到顶部
   document.querySelector('.design-page-wrapper').scrollTo(0, 0)
 }
@@ -270,9 +288,37 @@ const truncateContent = (content) => {
     : description
 }
 
+// 新增：下载FBT文件的方法
+const downloadFBT = (module) => {
+  if (!module.xmlfbt) {
+    alert('此模块没有可下载的FBT内容。')
+    return
+  }
+
+  const fbtContent = module.xmlfbt
+  const moduleName = (module.name || 'custom_module').replace(/\s+/g, '_')
+  const filename = `${moduleName}.fbt`
+
+  const blob = new Blob([fbtContent], { type: 'application/xml;charset=utf-8' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = filename
+  
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(link.href)
+  
+  showNotification(`已开始下载 ${filename}`, 'success')
+}
+
 const copyToClipboard = () => {
   if (designResult.value) {
-    navigator.clipboard.writeText(designResult.value)
+    // Assuming designResult is an object, stringify it for copying
+    const textToCopy = typeof designResult.value === 'string' 
+      ? designResult.value 
+      : JSON.stringify(designResult.value, null, 2);
+    navigator.clipboard.writeText(textToCopy)
       .then(() => {
         alert('设计方案已复制到剪贴板')
       })
@@ -520,6 +566,16 @@ const showNotification = (message, type = 'info') => {
 
 .action-button.delete:hover {
   background: rgba(255, 107, 107, 0.1);
+}
+
+.action-button.download-fbt {
+  background: transparent;
+  color: #46c195; /* Green color for download */
+  border-color: rgba(70, 193, 149, 0.3);
+}
+
+.action-button.download-fbt:hover {
+  background: rgba(70, 193, 149, 0.1);
 }
 
 .module-time {

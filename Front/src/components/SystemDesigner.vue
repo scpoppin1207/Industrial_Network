@@ -2,7 +2,7 @@
     <div class="app-container">
       <!-- 左侧画布区域 -->
       <div class="canvas-area" @keydown.delete="handleKeyDelete" tabindex="0">
-        <div class="background-animation"></div>
+        <div class="background-animation">
         <VueFlow
           v-model:nodes="nodes"  
           v-model:edges="edges"
@@ -55,19 +55,35 @@
             padding: '12px 16px',
             borderRadius: '8px',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
-            zIndex: 1000
+            zIndex: 1000,
+            minWidth: '200px'
           }"
         >
-          <div>
+          <!-- <div>
             <label>速度: <input v-model.number="editingSpeed" type="number" /></label>
           </div>
           <div>
             <label>长度: <input v-model.number="editingLength" type="number" /></label>
           </div>
+          <div>
+            <label>载荷: <input v-model.number="editingPayload" type="number" /></label>
+          </div>
+          <div>
+            <label>高度: <input v-model.number="editingHeight" type="number" /></label>
+          </div>
+          <div>
+            <label>最大存储量: <input v-model.number="editingCapacity" type="number" /></label>
+          </div> -->
+          <div v-for="prop in editingProperties" :key="prop">
+            <label>{{ propertyLabels[prop] }}: <input v-model.number="editingValues[prop]" type="number" /></label>
+          </div>
+          <div style="margin-top: 10px; display: flex; gap: 8px;">
+
           <button @click="saveProperties">保存</button>
           <button @click="cancelEditing">取消</button>
         </div>
       </div>
+    </div>
 
       <!-- 右侧模块库 -->
       <div class="sidebar">
@@ -205,15 +221,50 @@ const customNodes = ref([])
 const propertyEditorVisible = ref(false)
 const propertyEditorPosition = ref({ x: 0, y: 0 })
 const editingNode = ref(null)
-const editingSpeed = ref(0)
-const editingLength = ref(0)
+const editingValues = ref({}) // 使用对象存储编辑值
+const editingProperties = ref([]) // 存储当前节点拥有的属性
+// const editingSpeed = ref(0)
+// const editingLength = ref(0)
+// const editingPayload = ref(0)
+// const editingHeight = ref(0)
+// const editingCapacity = ref(0)
+
+// 属性标签映射
+const propertyLabels = {
+  speed: '速度',
+  length: '长度',
+  payload: '载荷',
+  height: '高度',
+  capacity: '最大存储量'
+}
+
+// Define properties each node type possesses
+const nodeProperties = {
+  'node-A': ['speed', 'length', 'payload'],
+  'node-B': ['speed', 'payload'],
+  'node-C': ['speed', 'height'],
+  'node-D': ['speed', 'capacity'],
+}
 
 const openPropertyEditor = (id, mouseY, mouseX) => {
   const node = findNode(id)
   if (!node) return
   editingNode.value = node
-  editingSpeed.value = node.data.speed ?? 0
-  editingLength.value = node.data.length ?? 0
+
+  // Determine properties based on node type
+  let properties = []
+  if (node.type.startsWith('custom-')) {
+    properties = ['speed', 'length', 'payload'] // Default for custom nodes
+  } else {
+    properties = nodeProperties[node.type] || []
+  }
+  editingProperties.value = properties
+
+  // Populate editing values
+  editingValues.value = {}
+  properties.forEach(prop => {
+    editingValues.value[prop] = node.data[prop] ?? 0
+  })
 
   // 新增逻辑，获取画布范围并进行位置限制
   const rect = paneEl.value?.getBoundingClientRect()
@@ -235,9 +286,9 @@ const openPropertyEditor = (id, mouseY, mouseX) => {
 
 const saveProperties = () => {
   if (editingNode.value) {
-    editingNode.value.data.speed = editingSpeed.value
-    editingNode.value.data.length = editingLength.value
-    // 触发响应式更新
+    editingProperties.value.forEach(prop => {
+      editingNode.value.data[prop] = editingValues.value[prop]
+    })
     editingNode.value.data = { ...editingNode.value.data }
   }
   propertyEditorVisible.value = false
@@ -505,6 +556,9 @@ const handleDrop = (e) => {
       floor: 1, // 默认楼层
       speed: 1, // 默认速度
       length: 1, // 默认长度
+      payload: 1, // 默认载荷
+      height : 1, //默认高度
+      capacity : 1,
       style: {
         background: '#fff',
         padding: '5px',
@@ -733,6 +787,9 @@ const addCustomNode = (nodeConfig, position) => {
       floor: 1, // 默认楼层
       speed: 1, // 默认速度
       length: 1, // 默认长度
+      payload: 1, // 默认载荷
+      height : 1, //默认高度
+      capacity: 1, //默认最大存储量
       style: {
         background: '#fff',
         padding: '5px',

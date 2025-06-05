@@ -13,6 +13,7 @@
     <!-- 新增属性展示 -->
     <div class="property-display">速度: {{ data.speed }}</div>
     <div class="property-display">长度: {{ data.length }}</div>
+    <div class="property-display">载荷: {{ data.payload }}</div>
     
     <!-- 输入点 -->
     <div class="inputs">
@@ -67,8 +68,6 @@ const props = defineProps({
   nodeConfig: Object
 })
 
-console.log(props.nodeConfig)
-
 // 计算输入输出点的位置
 const inputPosition = (index, total) => {
   return `${(index + 1) * 100 / (total + 1)}%`;
@@ -91,8 +90,21 @@ const getFloorColor = () => {
   return '#f8f9fa'
 }
 
-// 提取节点配置
-const nodeConfig = computed(() => props.data.nodeConfig || {})
+// Replace the previous nodeConfig computed logic with one that filters allowed keys.
+const nodeConfig = computed(() => {
+	// allowed property keys; if a node does not include a key the modal won’t show it.
+	const allowed = ['speed', 'length', 'payload', 'height', 'capacity']
+	const cfg = {}
+	allowed.forEach(key => {
+		if (props.data[key] !== undefined) {
+			cfg[key] = props.data[key]
+		}
+	})
+	return cfg
+})
+
+// Expose nodeConfig so SystemDesigner can access it.
+defineExpose({ nodeConfig })
 
 // 设置输入输出点
 const inputs = computed(() => {

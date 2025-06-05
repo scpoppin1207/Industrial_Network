@@ -1,6 +1,7 @@
 <script setup>
 import { Handle, Position} from '@vue-flow/core'
 import { ResizeRotateNode } from '@vue-flow/resize-rotate-node'
+import { computed } from 'vue'
 import my_transfer from '@/assets/transfer.png'
 const props = defineProps(['id', 'data', 'selected', 'resize', 'rotate', 'setRef'])
 const calculateColorfromFloor = (floor) => {
@@ -13,6 +14,20 @@ const calculateColorfromFloor = (floor) => {
   return `rgb(${r}, ${g}, ${b})`; // 返回RGB颜色字符串
 }
 
+// Add computed nodeConfig filtering allowed keys.
+const nodeConfig = computed(() => {
+	const allowed = ['speed', 'length', 'payload', 'height', 'capacity']
+	const cfg = {}
+	allowed.forEach(key => {
+		if (props.data[key] !== undefined) {
+			cfg[key] = props.data[key]
+		}
+	})
+	return cfg
+})
+
+// Expose nodeConfig.
+defineExpose({ nodeConfig })
 
 </script>
 
@@ -28,6 +43,7 @@ const calculateColorfromFloor = (floor) => {
       <!-- 新增属性展示 -->
       <div class="property-display">速度: {{ props.data.speed }}</div>
       <div class="property-display">长度: {{ props.data.length }}</div>
+      <div class="property-display">载荷: {{ props.data.payload }}</div>
       <div class="image-container">
           <img :src="my_transfer" alt="模块图示" class="node-image" />
         </div>
