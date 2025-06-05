@@ -41,6 +41,34 @@
         </VueFlow>
       </div>
 
+      <!-- 属性编辑弹窗 -->
+        <div  
+          v-if="propertyEditorVisible"
+          :style="{
+            position: 'absolute',
+            top: propertyEditorPosition.y + 'px',
+            left: propertyEditorPosition.x + 'px',
+            background: 'rgba(255, 255, 255, 0.15)',
+            backdropFilter: 'blur(8px)',
+            color: '#fff',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+            zIndex: 1000
+          }"
+        >
+          <div>
+            <label>速度: <input v-model.number="editingSpeed" type="number" /></label>
+          </div>
+          <div>
+            <label>长度: <input v-model.number="editingLength" type="number" /></label>
+          </div>
+          <button @click="saveProperties">保存</button>
+          <button @click="cancelEditing">取消</button>
+        </div>
+      </div>
+
       <!-- 右侧模块库 -->
       <div class="sidebar">
         <div class="sidebar-title">模块库</div>
@@ -173,6 +201,52 @@ const nodeD = ref(null)
 // 自定义节点配置
 const customNodes = ref([])
 
+// 右键编辑相关新变量
+const propertyEditorVisible = ref(false)
+const propertyEditorPosition = ref({ x: 0, y: 0 })
+const editingNode = ref(null)
+const editingSpeed = ref(0)
+const editingLength = ref(0)
+
+const openPropertyEditor = (id, mouseY, mouseX) => {
+  const node = findNode(id)
+  if (!node) return
+  editingNode.value = node
+  editingSpeed.value = node.data.speed ?? 0
+  editingLength.value = node.data.length ?? 0
+
+  // 新增逻辑，获取画布范围并进行位置限制
+  const rect = paneEl.value?.getBoundingClientRect()
+  const offsetX = rect?.left || 0
+  const offsetY = rect?.top || 0
+  const maxX = (rect?.width || 0) - 180 // 180 预留宽度
+  const maxY = (rect?.height || 0) - 120 // 120 预留高度
+
+  let finalX = mouseX - offsetX + 15
+  let finalY = mouseY - offsetY + 15
+  if (finalX < 0) finalX = 0
+  if (finalY < 0) finalY = 0
+  if (finalX > maxX) finalX = maxX
+  if (finalY > maxY) finalY = maxY
+
+  propertyEditorPosition.value = { x: finalX, y: finalY }
+  propertyEditorVisible.value = true
+}
+
+const saveProperties = () => {
+  if (editingNode.value) {
+    editingNode.value.data.speed = editingSpeed.value
+    editingNode.value.data.length = editingLength.value
+    // 触发响应式更新
+    editingNode.value.data = { ...editingNode.value.data }
+  }
+  propertyEditorVisible.value = false
+}
+
+const cancelEditing = () => {
+  propertyEditorVisible.value = false
+}
+
 // 从localStorage加载自定义模块
 const loadCustomModules = () => {
   try {
@@ -229,6 +303,17 @@ const onPaneReady = (instance) => {
   }) 
   // pane元素添加拖放事件监听器，'drop'事件触发时调用handleDrop函数
   pane.addEventListener('drop', handleDrop) 
+
+  // 添加右键事件监听，判断是否点击在节点上
+  pane.addEventListener('contextmenu', (e) => {
+    const nodeEl = e.target.closest('[data-node-id]')
+    if (nodeEl) {
+      e.preventDefault()
+      const id = nodeEl.getAttribute('data-node-id')
+      openPropertyEditor(id, e.clientY, e.clientX)
+    }
+  })
+
   console.log('☺️pane start')
 
   if (pendingFlow) {
@@ -418,6 +503,8 @@ const handleDrop = (e) => {
       inputs: config.handles.inputs.map(h => h.id),
       outputs: config.handles.outputs.map(h => h.id),
       floor: 1, // 默认楼层
+      speed: 1, // 默认速度
+      length: 1, // 默认长度
       style: {
         background: '#fff',
         padding: '5px',
@@ -644,6 +731,8 @@ const addCustomNode = (nodeConfig, position) => {
       outputs: outputs.map(h => h.id),
       nodeConfig: nodeConfig, // 传递完整配置
       floor: 1, // 默认楼层
+      speed: 1, // 默认速度
+      length: 1, // 默认长度
       style: {
         background: '#fff',
         padding: '5px',

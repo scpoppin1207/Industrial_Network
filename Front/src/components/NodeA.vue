@@ -21,10 +21,13 @@ const calculateColorfromFloor = (floor) => {
     :id="props.id"
     :data="props.data"
   >
-   <div class="node-wrapper" >
+   <div class="node-wrapper" :data-node-id="props.id">
     <div class="custom-node a" :style="{ backgroundColor: calculateColorfromFloor(props.data.floor) }">
       <div class="node-title">{{ "输送机" }}</div>
       <div class="floor-display">楼层: {{ props.data.floor }}</div>
+      <!-- 新增属性展示 -->
+      <div class="property-display">速度: {{ props.data.speed }}</div>
+      <div class="property-display">长度: {{ props.data.length }}</div>
       <div class="image-container">
           <img :src="my_transfer" alt="模块图示" class="node-image" />
         </div>
@@ -143,5 +146,13 @@ const calculateColorfromFloor = (floor) => {
   font-size: 14px;
   margin: 8px 0;
   color: #555;
+}
+
+/* 新增属性展示样式 */
+.property-display {
+  text-align: center;
+  font-size: 14px;
+  margin: 4px 0;
+  color: #333;
 }
 </style>
