@@ -146,7 +146,7 @@ def convert_json_to_xml(json_data):
         fb.set("x", str(int(node["position"]["x"])))
         fb.set("y", str(int(node["position"]["y"])))
     
-    print(node_map)
+    # print(node_map)
 
     # 处理边（连接）
     for edge in json_data["edges"]:
